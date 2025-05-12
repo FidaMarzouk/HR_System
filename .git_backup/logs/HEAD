@@ -1,0 +1,27 @@
+0000000000000000000000000000000000000000 f5aeaa013ed2917205e539ff450d48c27fd4b1d3 fida <fidamarzouk@gmail.com> 1744748314 +0100	commit (initial): manager dash update
+f5aeaa013ed2917205e539ff450d48c27fd4b1d3 37e937ad021ed46d70ca6413d6d01767e9105710 fida <fidamarzouk@gmail.com> 1744750149 +0100	commit (merge): Merge branch 'main' of https://github.com/fida-git/HRMS
+37e937ad021ed46d70ca6413d6d01767e9105710 b30d04cec3c95d653018047fa105bb3575382d20 fida <fidamarzouk@gmail.com> 1744750686 +0100	commit: commit updates
+b30d04cec3c95d653018047fa105bb3575382d20 cf60896ed94985ee9818cb0553b03150abdf40ae fida <fidamarzouk@gmail.com> 1744794526 +0100	commit: package changes
+cf60896ed94985ee9818cb0553b03150abdf40ae 6e84243ff2d517504f3ccad4b8bd172fbec29bc8 fida <fidamarzouk@gmail.com> 1744795225 +0100	commit: merge conflicts resolved
+6e84243ff2d517504f3ccad4b8bd172fbec29bc8 55f6ede35e77bf69fdc6aff24d99258eb27432a1 fida <fidamarzouk@gmail.com> 1744798104 +0100	commit: calendar update
+55f6ede35e77bf69fdc6aff24d99258eb27432a1 ba0f7aa3400be57ab2daab1ffc8dd9113be465a0 fida <fidamarzouk@gmail.com> 1744800257 +0100	commit: communication section updated
+ba0f7aa3400be57ab2daab1ffc8dd9113be465a0 ea845bd247afe533069f13d37dabdc5445861427 fida <fidamarzouk@gmail.com> 1744804999 +0100	commit: manager dash complete
+ea845bd247afe533069f13d37dabdc5445861427 826df23bed093da5a50d53ccd29718dfe73e3d7c fida <fidamarzouk@gmail.com> 1744823751 +0100	commit: side nav update
+826df23bed093da5a50d53ccd29718dfe73e3d7c 81ec61bfbf26083ffa148c1f9190273a6627724f fida <fidamarzouk@gmail.com> 1744844636 +0100	commit: date picker update
+81ec61bfbf26083ffa148c1f9190273a6627724f 756f6edb44b199fbee98d36e20f85dfbecdbe030 fida <fidamarzouk@gmail.com> 1744925854 +0100	commit: team section updated
+756f6edb44b199fbee98d36e20f85dfbecdbe030 0765de310922d33bb1a141cb63720527746ebc60 fida <fidamarzouk@gmail.com> 1744936318 +0100	commit: employee search
+0765de310922d33bb1a141cb63720527746ebc60 0105f5311d0dd7576e2a9405f7e4fa3f17bd1fad fida <fidamarzouk@gmail.com> 1744969604 +0100	commit: leave requests search
+0105f5311d0dd7576e2a9405f7e4fa3f17bd1fad a82a1bd6ffbd0abda716b09d70e8395c8421ac74 fida <fidamarzouk@gmail.com> 1744983004 +0100	commit: hr dash date picker
+a82a1bd6ffbd0abda716b09d70e8395c8421ac74 0cd8ede0b1415fdd2c5ba1b034d3f0f6e6e06f1a fida <fidamarzouk@gmail.com> 1744983700 +0100	commit: hr personal dash
+0cd8ede0b1415fdd2c5ba1b034d3f0f6e6e06f1a de89ab033a5f9b17baad5ac75981749bd524c3b0 fida <fidamarzouk@gmail.com> 1744991593 +0100	commit: HR dash overview complete
+de89ab033a5f9b17baad5ac75981749bd524c3b0 0b8dea21ad2714511ce8ea5621a10b629b4d2568 fida <fidamarzouk@gmail.com> 1744991687 +0100	commit: manager dash overview complete
+0b8dea21ad2714511ce8ea5621a10b629b4d2568 3fe284714aad78579346dbf769c05348baa9037a fida <fidamarzouk@gmail.com> 1745233971 +0100	commit: call implementation
+3fe284714aad78579346dbf769c05348baa9037a 0b8dea21ad2714511ce8ea5621a10b629b4d2568 fida <fidamarzouk@gmail.com> 1745234579 +0100	reset: moving to 0b8dea21ad2714511ce8ea5621a10b629b4d2568
+0b8dea21ad2714511ce8ea5621a10b629b4d2568 cd0247d5e7620a4c33277aedf4065f8635e74e81 fida <fidamarzouk@gmail.com> 1745237816 +0100	commit: calendar updated
+cd0247d5e7620a4c33277aedf4065f8635e74e81 c19d1ae5ed2bcb0f0d2ed3129d7939469236ab67 fida <fidamarzouk@gmail.com> 1745271931 +0100	commit: department view modal_search options
+c19d1ae5ed2bcb0f0d2ed3129d7939469236ab67 d708c294c355e7f91139f7ae003db90c904ff9ab fida <fidamarzouk@gmail.com> 1745788385 +0100	commit: attendance files updates
+d708c294c355e7f91139f7ae003db90c904ff9ab a291a30d54d6b02a94a96b11f577d08aede79aaf fida <fidamarzouk@gmail.com> 1745789807 +0100	commit: dashboards updates
+a291a30d54d6b02a94a96b11f577d08aede79aaf a0e0390f292637b75713f5aa0b4411ee81df11d0 fida <fidamarzouk@gmail.com> 1745843376 +0100	commit: HRdash complete
+a0e0390f292637b75713f5aa0b4411ee81df11d0 ac92ba6bbde04d754646ca3905107dd04b20b7e3 fida <fidamarzouk@gmail.com> 1746400957 +0100	commit: attendance cronjob
+ac92ba6bbde04d754646ca3905107dd04b20b7e3 6e1fd1be9adffd72ef719ef5869215e42a2034b7 fida <fidamarzouk@gmail.com> 1746461932 +0100	commit: leave request correction
+6e1fd1be9adffd72ef719ef5869215e42a2034b7 ead6b01c40df88cc21f5d79183ca810065dd6a23 fida <fidamarzouk@gmail.com> 1746470504 +0100	commit: attendance reports fixed
