@@ -13,42 +13,36 @@ import {
   Activity,
   Grid,
   MessageCircle,
-  Menu,
-  LayoutDashboard,
-  LineChart
+  Menu
 } from "lucide-react";
-import { FaSearch, FaSignOutAlt, FaRobot } from 'react-icons/fa';
+import {FaSignOutAlt, FaRobot } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import EmployeePage from '../Admin_Dashboard/EmployeePage';
-import LeaveRequestPage from '../Admin_Dashboard/LeaveRequestPage';
+import LeaveRequestPage from './EmployeeLeaveRequestPage';
+import AttendanceDashboard from '../../Attendance/AttendanceManager';
 import RoboticLogoutModal from '../../auth/LogoutModal';
-import AttendanceManager from '../../Attendance/AttendanceManager';
 import ProfilePage from '../../ProfilePage';
 import CalendarManager from '../../CalendarManager';
 import NotificationPage from '../../NotificationSystem';
 import ChatBot from '../../ChatBot';
 import ChatComponent from '../../TeamChat';
-import HRDashboardHomepage from '../Admin_Dashboard/HRDashboardHomepage';
-import PersonalDashboard from '../Employee_Dashboard/EmployeeDashboardHomepage';
-
-// Circuit pattern for background
-const CircuitPattern = () => (
-  <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-      <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-        <path d="M20 40 L40 40 L40 20 L60 20 L60 40 L80 40" stroke="#3baca5" fill="none" strokeWidth="2"/>
-        <path d="M20 60 L40 60 L40 80 L60 80 L60 60 L80 60" stroke="#3baca5" fill="none" strokeWidth="2"/>
-        <circle cx="20" cy="40" r="3" fill="#3baca5"/>
-        <circle cx="80" cy="40" r="3" fill="#3baca5"/>
-        <circle cx="20" cy="60" r="3" fill="#3baca5"/>
-        <circle cx="80" cy="60" r="3" fill="#3baca5"/>
-      </pattern>
-      <rect width="100%" height="100%" fill="url(#circuit)" />
-    </svg>
-  </div>
-);
-
-const AdminDashboard = () => {
+import EmployeeDashboardHomePage from '../Employee_Dashboard/EmployeeDashboardHomepage';
+  // Circuit pattern for background
+  const CircuitPattern = () => (
+    <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+          <path d="M20 40 L40 40 L40 20 L60 20 L60 40 L80 40" stroke="#3baca5" fill="none" strokeWidth="2"/>
+          <path d="M20 60 L40 60 L40 80 L60 80 L60 60 L80 60" stroke="#3baca5" fill="none" strokeWidth="2"/>
+          <circle cx="20" cy="40" r="3" fill="#3baca5"/>
+          <circle cx="80" cy="40" r="3" fill="#3baca5"/>
+          <circle cx="20" cy="60" r="3" fill="#3baca5"/>
+          <circle cx="80" cy="60" r="3" fill="#3baca5"/>
+        </pattern>
+        <rect width="100%" height="100%" fill="url(#circuit)" />
+      </svg>
+    </div>
+  );
+const EmployeeDashboard = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [openSideBar, setOpenSideBar] = useState(true);
@@ -57,82 +51,55 @@ const AdminDashboard = () => {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
-  const [expandedNavItems, setExpandedNavItems] = useState({Home: false });  
+  const [expandedNavItems, setExpandedNavItems] = useState({Home: false }); 
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [user, setUser] = useState({
     firstName: '',
     lastName: '',
     picture: '',
-    role: 'System Administrator'
+    role: 'Employee'
   });
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Check if sidebar is open and click is outside sidebar
-      if (
-        showMenu && 
-        sidebarRef.current && 
-        !sidebarRef.current.contains(event.target)
-      ) {
-        setShowMenu(false);
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        // Check if sidebar is open and click is outside sidebar
+        if (
+          showMenu && 
+          sidebarRef.current && 
+          !sidebarRef.current.contains(event.target)
+        ) {
+          setShowMenu(false);
+        }
+      };
+  
+      // Add event listener when sidebar is open
+      if (showMenu) {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
       }
-    };
-
-    // Add event listener when sidebar is open
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
-
-    // Cleanup event listeners
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [showMenu]);
-
-  const toggleSubMenu = (navName) => {
-    setExpandedNavItems(prev => ({
-      ...prev,
-      [navName]: !prev[navName]
-    }));
-  };
+  
+      // Cleanup event listeners
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
+    }, [showMenu]);
 
   const navigationList = [
     {
       name: "Home",
       icon: <Home className="w-5 h-5" />,
-      description: "Dashboards",
-      hasSubItems: true,
-      subItems: [
-        {
-          name: "Main Dashboard",
-          icon: <LayoutDashboard className="w-4 h-4" />,
-          description: "Company overview",
-          onClick: () => setActivePage("MainDashboard")
-        },
-        {
-          name: "Personal Stats",
-          icon: <LineChart className="w-4 h-4" />,
-          description: "Your personal stats",
-          onClick: () => setActivePage("PersonalDashboard")
-        }
-      ]
-    },
-    {
-      name: "Employees",
-      icon: <Users className="w-5 h-5" />,
-      description: "Manage staff members"
+      description: "Dashboard"
     },
     {
       name: "Leave Requests",
       icon: <Clipboard className="w-5 h-5" />,
-      description: "Review time off requests"
+      description: "Manage time off"
     },
     {
       name: "Attendance",
       icon: <Calendar className="w-5 h-5" />,
-      description: "Track employee presence"
+      description: "Track your presence"
     },
     {
       name: "Calendar",
@@ -208,113 +175,111 @@ const AdminDashboard = () => {
       setUnreadMessages(0);
     }
   };
-  
-  // Add useEffect to fetch notification count when component mounts
-  useEffect(() => {
-    fetchUnreadNotificationCount();
-    
-    // Set up interval to periodically refresh the count (every 30 seconds)
-    const interval = setInterval(() => {
+    // Add useEffect to fetch notification count when component mounts
+    useEffect(() => {
       fetchUnreadNotificationCount();
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
-  useEffect(() => {
-    fetchUnreadMessagesCount();
-    
-    // Set up interval to periodically refresh the count
-    const interval = setInterval(() => {
-      fetchUnreadMessagesCount();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
-  useEffect(() => {
-    // Initialize socket connection
-    const socket = io('http://localhost:8080', {
-      withCredentials: true
-    });
-
-    // Listen for new notifications
-    socket.on('notification', () => {
-      // Increment unread count when a new notification arrives
-      fetchUnreadNotificationCount();
-    });
-
-    // Listen for notification updates (read/deleted)
-    socket.on('notificationUpdate', ({ type }) => {
-      if (type === 'read' || type === 'readAll' || type === 'delete') {
-        // Refresh count when notifications are marked as read or deleted
+      
+      // Set up interval to periodically refresh the count (every 30 seconds)
+      const interval = setInterval(() => {
         fetchUnreadNotificationCount();
-      }
-    });
-
-    // Cleanup on unmount
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-  useEffect(() => {
-    // Initialize socket connection (can reuse existing socket if available)
-    const socket = io('http://localhost:8080', {
-      withCredentials: true
-    });
-  
-    // Listen for new chat messages
-    socket.on('newMessage', (message) => {
-      // Check if the message is for the current user
-      if (message.receiver._id === user.id) {
-        // Fetch latest count
-        fetchUnreadMessagesCount();
-      }
-    });
-  
-    // Listen for messages being marked as read
-    socket.on('messagesRead', () => {
-      // Refresh count when messages are marked as read
+      }, 500);
+      
+      return () => clearInterval(interval);
+    }, []);
+    useEffect(() => {
       fetchUnreadMessagesCount();
-    });
+      
+      // Set up interval to periodically refresh the count
+      const interval = setInterval(() => {
+        fetchUnreadMessagesCount();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }, []);
+    useEffect(() => {
+      // Initialize socket connection
+      const socket = io('http://localhost:8080', {
+        withCredentials: true
+      });
   
-    // Cleanup on unmount
-    return () => {
-      socket.disconnect();
-    };
-  }, [user.id]);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    
-    return () => clearInterval(timer);
-  }, []);
+      // Listen for new notifications
+      socket.on('notification', () => {
+        // Increment unread count when a new notification arrives
+        fetchUnreadNotificationCount();
+      });
   
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/users/me', {
-          withCredentials: true
-        });
-        
-        if (response.data) {
-          setUser({
-            firstName: response.data.firstName,
-            lastName: response.data.lastName,
-            email: response.data.email,
-            picture: response.data.picture || '',
-            role: response.data.role || 'System Administrator'
-          });
+      // Listen for notification updates (read/deleted)
+      socket.on('notificationUpdate', ({ type }) => {
+        if (type === 'read' || type === 'readAll' || type === 'delete') {
+          // Refresh count when notifications are marked as read or deleted
+          fetchUnreadNotificationCount();
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
+      });
   
-    fetchUserData();
-  }, []);
-
-  // Get greeting based on time of day
-  const getGreeting = () => {
+      // Cleanup on unmount
+      return () => {
+        socket.disconnect();
+      };
+    }, []);
+    useEffect(() => {
+      // Initialize socket connection (can reuse existing socket if available)
+      const socket = io('http://localhost:8080', {
+        withCredentials: true
+      });
+    
+      // Listen for new chat messages
+      socket.on('newMessage', (message) => {
+        // Check if the message is for the current user
+        if (message.receiver._id === user.id) {
+          // Fetch latest count
+          fetchUnreadMessagesCount();
+        }
+      });
+    
+      // Listen for messages being marked as read
+      socket.on('messagesRead', () => {
+        // Refresh count when messages are marked as read
+        fetchUnreadMessagesCount();
+      });
+    
+      // Cleanup on unmount
+      return () => {
+        socket.disconnect();
+      };
+    }, [user.id]);
+  
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000);
+      
+      return () => clearInterval(timer);
+    }, []);
+      useEffect(() => {
+        const fetchUserData = async () => {
+          try {
+            const response = await axios.get('http://localhost:8080/api/users/me', {
+              withCredentials: true
+            });
+            
+            if (response.data) {
+              setUser({
+                firstName: response.data.firstName,
+                lastName: response.data.lastName,
+                email: response.data.email,
+                picture: response.data.picture || '',
+                role: response.data.role || 'Chief Executive Officer'
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+          }
+        };
+      
+        fetchUserData();
+      }, []);
+   // Get greeting based on time of day
+   const getGreeting = () => {
     const hour = currentTime.getHours();
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
@@ -406,80 +371,11 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </li>
-              
-              {/* SubItems for navigation when sidebar is expanded */}
-              {item.hasSubItems && expandedNavItems[item.name] && openSideBar && (
-                <div className="ml-8 mb-2">
-                  {item.subItems.map((subItem, subIndex) => (
-                    <li
-                      key={`${item.name}-${subIndex}`}
-                      className={`flex items-center space-x-2 p-2 my-1 rounded-lg transition-all duration-200 cursor-pointer
-                        ${activePage === subItem.name 
-                          ? "bg-gradient-to-r from-[#3baca5]/10 to-transparent border-l-2 border-[#3baca5]" 
-                          : "hover:bg-gray-800 border-l-2 border-transparent"}`}
-                      onClick={() => {
-                        subItem.onClick();
-                        setShowMenu(false);
-                      }}
-                    >
-                      <div className={`flex items-center justify-center w-6 h-6 flex-shrink-0 ${activePage === subItem.name ? "text-[#3baca5]" : "text-gray-400"}`}>
-                        {subItem.icon}
-                      </div>
-  
-                      <div className="flex flex-col">
-                        <span className={`font-medium text-sm ${activePage === subItem.name ? "text-[#3baca5]" : "text-gray-300"}`}>
-                          {subItem.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {subItem.description}
-                        </span>
-                      </div>
-  
-                      {activePage === subItem.name && (
-                        <div className="ml-auto">
-                          <div className="w-1.5 h-1.5 bg-[#3baca5] rounded-full"></div>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </div>
-              )}
-              
-              {/* SubItems icons when sidebar is collapsed */}
-              {item.hasSubItems && expandedNavItems[item.name] && !openSideBar && (
-                <>
-                  {item.subItems.map((subItem, subIndex) => (
-                    <li
-                      key={`${item.name}-collapsed-${subIndex}`}
-                      className={`flex items-center justify-center p-3 my-1 rounded-lg transition-all duration-200 cursor-pointer
-                        ${activePage === subItem.name 
-                          ? "bg-gradient-to-r from-[#3baca5]/20 to-[#3baca5]/10 border-l-4 border-[#3baca5]" 
-                          : "hover:bg-gray-800 border-l-4 border-transparent"}`}
-                      onClick={() => {
-                        subItem.onClick();
-                        setShowMenu(false);
-                      }}
-                      title={subItem.name}
-                    >
-                      <div className={`flex items-center justify-center w-6 h-6 ${activePage === subItem.name ? "text-[#3baca5]" : "text-gray-400"}`}>
-                        {subItem.icon}
-                      </div>
-                      
-                      {activePage === subItem.name && (
-                        <div className="absolute right-2">
-                          <div className="w-1.5 h-1.5 bg-[#3baca5] rounded-full"></div>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </>
-              )}
             </React.Fragment>
-          ))}
-        </ul>
-      </div>
-  
-      <div className="mt-auto border-t border-gray-700 pt-4">
+            ))}
+          </ul>
+        </div>
+        <div className="mt-auto border-t border-gray-700 pt-4">
         <ul className="px-1">
           {footerNavigation.map((item, index) => (
             <li
@@ -514,7 +410,6 @@ const AdminDashboard = () => {
       </div>
     </div>
   );
-
   return (
     <div className="min-h-screen bg-[#121212] text-white w-full overflow-hidden">
       <RoboticLogoutModal 
@@ -663,32 +558,11 @@ const AdminDashboard = () => {
             <div className="absolute inset-0 z-0 opacity-5 pointer-events-none">
               <CircuitPattern />
             </div>
-            
-            {/* Home page with sub-pages */}
-            {activePage === "MainDashboard" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
-                <HRDashboardHomepage/>
-              </div>
-            )}
-
-            {activePage === "PersonalDashboard" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
-                <PersonalDashboard personalView={true} />
-              </div>
-            )}
-
-            {/* Initial redirect to main dashboard when "Home" is active */}
+            {/* Home page */}
             {activePage === "Home" && (
               <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
-                <HRDashboardHomepage/>
-              </div>
-            )}
-            
-            {/* Employees page */}
-            {activePage === "Employees" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
-                <EmployeePage />
-              </div>
+              <EmployeeDashboardHomePage />
+            </div>
             )}
             
             {/* Leave Requests page */}
@@ -701,7 +575,7 @@ const AdminDashboard = () => {
             {/* Attendance page */}
             {activePage === "Attendance" && (
               <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
-                <AttendanceManager/>
+                  <AttendanceDashboard />
               </div>
             )}
 
@@ -718,7 +592,7 @@ const AdminDashboard = () => {
                 <ProfilePage user={user} setUser={setUser} />
               </div>
             )}
-                     
+                    
             {activePage === "Notifications" && (
               <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
                 <NotificationPage/>
@@ -729,7 +603,7 @@ const AdminDashboard = () => {
               <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
                 <ChatComponent />
               </div>
-            )} 
+            )}
             
             {/* ChatBot component */}
             <ChatBot />
@@ -745,4 +619,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default EmployeeDashboard;

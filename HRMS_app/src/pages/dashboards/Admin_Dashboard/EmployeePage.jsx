@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaChevronLeft, FaChevronRight, FaRobot, FaUsers, FaSitemap, FaUserPlus, FaSitemap as FaDepartment } from 'react-icons/fa';
-import {RefreshCw } from "lucide-react";
+import {RefreshCw,User } from "lucide-react";
 
 const EmployeePage = () => {
   const [employees, setEmployees] = useState([]);
@@ -623,13 +623,13 @@ const refreshAllEmployeeData = async () => {
         return '#878285'; // Default gray
     }
   };
-  const employeesPerPage = 5;
-  const indexOfLastEmployee = currentPage * employeesPerPage;
-  const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
-  const currentEmployees = filteredEmployees.slice(indexOfFirstEmployee, indexOfLastEmployee);
-  const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
+const employeesPerPage = 5;
+const indexOfLastEmployee = currentPage * employeesPerPage;
+const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
+const currentEmployees = filteredEmployees.slice(indexOfFirstEmployee, indexOfLastEmployee);
+const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
 
-  const departmentsPerPage = 5;
+const departmentsPerPage = 5;
 const indexOfLastDepartment = currentPage * departmentsPerPage;
 const indexOfFirstDepartment = indexOfLastDepartment - departmentsPerPage;
 const currentDepartments = filteredDepartments.slice(indexOfFirstDepartment, indexOfLastDepartment);
@@ -750,20 +750,24 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
                   {currentEmployees.map((employee) => (
                     employee._id ? (
                       <tr key={employee._id} className="bg-[#2a2a2a] hover:bg-[#333] transition-colors">
-                        <td className="py-4 px-3 text-sm">
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm">
                           <div className="h-12 w-12 rounded-full border-2 border-[#33adb4] overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
-                            <img 
-                              src={employee.profilePicture ? `http://localhost:8080${employee.profilePicture}` : "/default-avatar.png"} 
-                              alt="Profile"
-                              className="h-12 w-12 object-cover"
-                            />
+                          {employee.profilePicture ? (
+                              <img 
+                                src={`http://localhost:8080${employee.profilePicture}`} 
+                                alt="Profile"
+                                className="h-12 w-12 object-cover"
+                              />
+                            ) : (
+                              <User className="h-8 w-8 text-[#33adb4]" />
+                            )}
                           </div>
                         </td>
-                        <td className="py-4 px-3 text-sm text-white font-medium">
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm text-white font-medium">
                           {employee.firstName} {employee.lastName}
                         </td>
-                        <td className="py-4 px-3 text-sm text-gray-300">{employee.email}</td>
-                        <td className="py-4 px-3 text-sm">
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm text-gray-300">{employee.email}</td>
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm">
                           <span 
                             className="px-2 py-1 rounded-full text-xs font-medium" 
                             style={{ 
@@ -775,9 +779,9 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
                             {employee.role}
                           </span>
                         </td>
-                        <td className="py-4 px-3 text-sm text-gray-300">{employee.position}</td>
-                        <td className="py-4 px-3 text-sm text-gray-300">{new Date(employee.hireDate).toLocaleDateString()}</td>
-                        <td className="py-4 px-3 text-sm">
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm text-gray-300">{employee.position}</td>
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm text-gray-300">{new Date(employee.hireDate).toLocaleDateString()}</td>
+                        <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm">
                           <div className="flex space-x-2">
                             <button 
                               className="px-2 py-1 bg-[#33adb4] text-white rounded text-xs hover:bg-[#2a8c92] transition-colors"
@@ -802,65 +806,65 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
           </div>
 
           {/* Mobile View */}
-          <div className="md:hidden space-y-4">
-            {currentEmployees.map((employee) => (
-              employee._id ? (
-                <div 
-                  key={employee._id} 
-                  className="bg-[#2a2a2a] rounded-lg p-4 shadow-md border border-[#333]"
-                >
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="h-16 w-16 rounded-full border-2 border-[#33adb4] overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
-                      <img 
-                        src={employee.profilePicture ? `http://localhost:8080${employee.profilePicture}` : "/default-avatar.png"} 
-                        alt="Profile"
-                        className="h-16 w-16 object-cover"
-                      />
-                    </div>
-                    <div>
-                      <div className="text-white font-semibold">{employee.firstName} {employee.lastName}</div>
-                      <div className="text-xs text-gray-300">{employee.email}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="text-xs text-gray-400">Role</div>
-                    <span 
-                      className="px-2 py-1 rounded-full text-xs font-medium inline-block" 
-                      style={{ 
-                        backgroundColor: getRoleColor(employee.role) + '33',
-                        color: getRoleColor(employee.role),
-                        border: `1px solid ${getRoleColor(employee.role)}`
-                      }}
-                    >
-                      {employee.role}
-                    </span>
-
-                    <div className="text-xs text-gray-400">Position</div>
-                    <div className="text-sm text-white">{employee.position}</div>
-
-                    <div className="text-xs text-gray-400">Hire Date</div>
-                    <div className="text-sm text-white">{new Date(employee.hireDate).toLocaleDateString()}</div>
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <button 
-                      className="flex-1 px-3 py-2 bg-[#33adb4] text-white rounded text-xs hover:bg-[#2a8c92] transition-colors"
-                      onClick={() => handleEdit(employee._id)}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      className="flex-1 px-3 py-2 bg-[#31638a] text-white rounded text-xs hover:bg-[#264e6e] transition-colors"
-                      onClick={() => handleDelete(employee._id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ) : null
-            ))}
+          <div className="md:hidden space-y-3 sm:space-y-4">
+  {currentEmployees.map((employee) => (
+    employee._id ? (
+      <div 
+        key={employee._id} 
+        className="bg-gray-800 rounded-lg p-3 sm:p-4 shadow-md border border-gray-700"
+      >
+        <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-teal-500 overflow-hidden bg-gray-900 flex items-center justify-center">
+            <img 
+              src={employee.profilePicture ? `http://localhost:8080${employee.profilePicture}` : "/default-avatar.png"} 
+              alt="Profile"
+              className="h-full w-full object-cover"
+            />
           </div>
+          <div>
+            <div className="text-sm sm:text-base font-semibold text-white">{employee.firstName} {employee.lastName}</div>
+            <div className="text-xs sm:text-sm text-gray-300">{employee.email}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mb-3 sm:mb-4">
+          <div className="text-xs text-gray-400">Role</div>
+          <span 
+            className="px-2 py-1 rounded-full text-xs font-medium inline-block" 
+            style={{ 
+              backgroundColor: getRoleColor(employee.role) + '33',
+              color: getRoleColor(employee.role),
+              border: `1px solid ${getRoleColor(employee.role)}`
+            }}
+          >
+            {employee.role}
+          </span>
+
+          <div className="text-xs text-gray-400">Position</div>
+          <div className="text-xs sm:text-sm text-white">{employee.position}</div>
+
+          <div className="text-xs text-gray-400">Hire Date</div>
+          <div className="text-xs sm:text-sm text-white">{new Date(employee.hireDate).toLocaleDateString()}</div>
+        </div>
+
+        <div className="flex space-x-2">
+          <button 
+            className="flex-1 px-2 py-1 sm:px-3 sm:py-2 bg-teal-600 text-white rounded text-xs hover:bg-teal-700 transition-colors"
+            onClick={() => handleEdit(employee._id)}
+          >
+            Edit
+          </button>
+          <button 
+            className="flex-1 px-2 py-1 sm:px-3 sm:py-2 bg-blue-800 text-white rounded text-xs hover:bg-blue-900 transition-colors"
+            onClick={() => handleDelete(employee._id)}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ) : null
+  ))}
+</div>
 
           {/* Pagination Controls */}
           <div className="flex items-center justify-between mt-4 px-4 text-gray-300">
@@ -1061,7 +1065,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50">
-          <div className="bg-[#2a2a2a] p-6 rounded-lg w-[400px] shadow-lg border border-[#444]">
+          <div className="bg-[#2a2a2a] p-6 rounded-lg w-full max-w-sm shadow-lg border border-[#444]">
             <div className="flex items-center justify-center text-[#e74c3c] mb-4">
               <FaRobot className="text-4xl" />
             </div>
@@ -1116,12 +1120,13 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
     )}
 {/* user Form*/}
 {(isEditing || isCreating) && (
-  <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-4">
+  <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-2 sm:p-4">
     <form 
-      className="bg-[#2a2a2a] p-6 rounded-lg w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] custom-scrollbar" 
+    className="bg-[#2a2a2a] p-3 sm:p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] custom-scrollbar"
       onSubmit={handleFormSubmit}
     >
       {errorMessage && (
+        
         <div className="p-4 bg-[#e74c3c] text-white rounded-md mb-4 border-l-4 border-[#c0392b] animate-fadeIn">
           <div className="flex items-center mb-2">
             <FaRobot className="mr-2 text-xl" />

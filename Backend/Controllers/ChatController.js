@@ -1,4 +1,5 @@
 const ChatMessage = require('../Models/TeamChat');
+const User = require('../Models/User'); // Add the missing import for User model
 const mongoose = require('mongoose');
 const { getIO } = require('../Middlewares/notificationService');
 
@@ -141,10 +142,13 @@ exports.deleteMessage = async (req, res) => {
     
     await ChatMessage.findByIdAndUpdate(messageId, updateData);
     
-    // Notify the user about the deleted message (only the user who deleted it)
+    // Notify both users about the deleted message
     const io = getIO();
     if (io) {
       io.to(userId).emit('messageDeleted', { messageId });
+      // Also notify the other user if they're connected
+      const otherUserId = message.sender.toString() === userId ? message.receiver.toString() : message.sender.toString();
+      io.to(otherUserId).emit('messageDeleted', { messageId });
     }
     
     res.status(200).json({ message: 'Message deleted successfully' });
@@ -189,14 +193,16 @@ exports.deleteConversation = async (req, res) => {
   }
 };
 
+// Optimized getConversations function with proper error handling
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
     // Convert userId to ObjectId
     const userObjectId = new mongoose.Types.ObjectId(userId);
     
-    // First, find all unique conversation partners
-    const conversationPartners = await ChatMessage.aggregate([
+    // Use aggregation to get all conversation data in a single query
+    const conversationsData = await ChatMessage.aggregate([
+      // Match messages where the current user is either sender or receiver
       {
         $match: {
           $or: [
@@ -205,68 +211,110 @@ exports.getConversations = async (req, res) => {
           ]
         }
       },
+      // Determine the conversation partner for each message
       {
         $project: {
-          conversationPartner: {
+          message: 1,
+          createdAt: 1,
+          isRead: 1,
+          partnerId: {
             $cond: [
               { $eq: ["$sender", userObjectId] },
               "$receiver",
               "$sender"
             ]
+          },
+          // Flag to identify if the message is sent to the current user and unread
+          isUnread: {
+            $and: [
+              { $eq: ["$receiver", userObjectId] },
+              { $eq: ["$isRead", false] }
+            ]
           }
         }
       },
+      // Group by conversation partner
       {
         $group: {
-          _id: "$conversationPartner"
+          _id: "$partnerId",
+          lastMessage: { $last: "$message" },
+          lastMessageDate: { $max: "$createdAt" },
+          unreadCount: { 
+            $sum: { $cond: ["$isUnread", 1, 0] }
+          },
+          messageCount: { $sum: 1 }
+        }
+      },
+      // Sort by most recent message
+      {
+        $sort: { lastMessageDate: -1 }
+      },
+      // Lookup partner user details
+      {
+        $lookup: {
+          from: "users", // This should match your User collection name
+          localField: "_id",
+          foreignField: "_id",
+          as: "userDetails"
+        }
+      },
+      // Unwind the userDetails array to get a single object
+      {
+        $unwind: "$userDetails"
+      },
+      // Shape the final output
+      {
+        $project: {
+          _id: 1,
+          userId: "$_id",
+          firstName: "$userDetails.firstName",
+          lastName: "$userDetails.lastName",
+          picture: "$userDetails.picture",
+          role: "$userDetails.role",
+          lastMessage: 1,
+          lastMessageDate: 1,
+          unreadCount: 1,
+          messageCount: 1
         }
       }
     ]);
-
-    // For each conversation partner, get conversation details
-    const conversationsPromises = conversationPartners.map(async (partner) => {
-      const partnerId = partner._id;
-      
-      // Get the most recent message for this conversation
-      const lastMessageData = await ChatMessage.findOne({
-        $or: [
-          { sender: userObjectId, receiver: partnerId },
-          { sender: partnerId, receiver: userObjectId }
-        ]
-      }).sort({ createdAt: -1 });
-      
-      // Count unread messages for this conversation
-      const unreadCount = await ChatMessage.countDocuments({
-        sender: partnerId,
-        receiver: userObjectId,
-        isRead: false
-      });
-      
-      // Get user details
-      const userDetails = await User.findById(partnerId);
-      
-      return {
-        _id: partnerId,
-        userId: userDetails._id,
-        firstName: userDetails.firstName,
-        lastName: userDetails.lastName,
-        email: userDetails.email,
-        picture: userDetails.picture,
-        role: userDetails.role,
-        lastMessage: lastMessageData.message,
-        lastMessageDate: lastMessageData.createdAt,
-        unreadCount: unreadCount
-      };
-    });
     
-    const conversations = await Promise.all(conversationsPromises);
-    
-    // Sort by most recent message
-    conversations.sort((a, b) => b.lastMessageDate - a.lastMessageDate);
-    
-    res.json(conversations);
+    res.json(conversationsData);
   } catch (error) {
     console.error('Error fetching conversations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.getUnreadMessagesCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Convert userId to ObjectId
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    
+    // Aggregate to get the sum of unread messages across all conversations
+    const result = await ChatMessage.aggregate([
+      // Match only messages sent to the current user that are unread
+      {
+        $match: {
+          receiver: userObjectId,
+          isRead: false
+        }
+      },
+      // Count the total unread messages
+      {
+        $group: {
+          _id: null,
+          totalUnread: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Return 0 if no unread messages found
+    const unreadCount = result.length > 0 ? result[0].totalUnread : 0;
+    res.json({ unreadCount });
+  } catch (error) {
+    console.error('Error fetching unread messages count:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

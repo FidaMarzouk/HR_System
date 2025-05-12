@@ -24,6 +24,7 @@ export default function ChatComponent() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [conversations, setConversations] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
     const messageEndRef = useRef(null);
     const selectedUserRef = useRef(null);
     const socketRef = useRef(null); // Reference to maintain socket instance
@@ -36,12 +37,15 @@ export default function ChatComponent() {
     
     const fetchCurrentUser = async () => {
       try {
+        setIsLoading(true);
         const response = await axios.get('http://localhost:8080/api/users/me', {
           withCredentials: true
         });
         setCurrentUser(response.data);
       } catch (error) {
         console.error('Error fetching current user:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -183,20 +187,26 @@ export default function ChatComponent() {
 
     const fetchConversations = async () => {
       try {
+        setIsLoading(true);
         const res = await axios.get('http://localhost:8080/api/chat/conversations', {
           withCredentials: true,
         });
         
         if (Array.isArray(res.data)) {
+          // Debug log to see the actual data
+          console.log('Fetched conversations:', res.data); 
           setConversations(res.data);
         }
       } catch (error) {
         handleApiError(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     const fetchEmployees = async () => {
       try {
+        setIsLoading(true);
         const res = await axios.get('http://localhost:8080/api/chat/users', {
           withCredentials: true,
         });
@@ -211,15 +221,18 @@ export default function ChatComponent() {
         }
       } catch (error) {
         handleApiError(error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     const fetchMessages = async (userId) => {
-      // Find the selected user object from employees array
-      const userObj = employees.find(emp => emp._id === userId);
-      setSelectedUser(userObj); // Store the full user object
-      
       try {
+        setIsLoading(true);
+        // Find the selected user object from employees array
+        const userObj = employees.find(emp => emp._id === userId);
+        setSelectedUser(userObj); // Store the full user object
+        
         const res = await axios.get(`http://localhost:8080/api/chat/messages/${userId}`, {
           withCredentials: true,
         });
@@ -240,10 +253,11 @@ export default function ChatComponent() {
               : conv
           )
         );
-        
-      }  catch (error) {
+      } catch (error) {
         handleApiError(error);
         setMessages([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -268,6 +282,7 @@ export default function ChatComponent() {
       if (!newMessage.trim() || !selectedUser || !currentUser) return;
       
       try {
+        setIsLoading(true);
         const res = await axios.post('http://localhost:8080/api/chat/messages', 
           { receiverId: selectedUser._id, message: newMessage },
           { withCredentials: true }
@@ -278,12 +293,15 @@ export default function ChatComponent() {
         }
       } catch (error) {
         handleApiError(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     // Delete a single message
     const deleteMessage = async (messageId) => {
       try {
+        setIsLoading(true);
         await axios.delete(`http://localhost:8080/api/chat/messages/${messageId}`, {
           withCredentials: true
         });
@@ -294,6 +312,8 @@ export default function ChatComponent() {
       } catch (error) {
         console.error('Error deleting message:', error);
         handleApiError(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -302,6 +322,7 @@ export default function ChatComponent() {
       if (!selectedUser) return;
       
       try {
+        setIsLoading(true);
         await axios.delete(`http://localhost:8080/api/chat/conversations/${selectedUser._id}`, {
           withCredentials: true
         });
@@ -312,6 +333,8 @@ export default function ChatComponent() {
       } catch (error) {
         console.error('Error deleting conversation:', error);
         handleApiError(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -335,10 +358,12 @@ export default function ChatComponent() {
       return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    // Get unread count for a user
+    // Get unread count for a user - optimized version
     const getUnreadCount = (userId) => {
+      if (!Array.isArray(conversations)) return 0;
+      
       const conversation = conversations.find(conv => conv.userId === userId);
-      return conversation ? conversation.unreadCount : 0;
+      return conversation?.unreadCount || 0;
     };
 
     // Handle search input change
@@ -351,6 +376,7 @@ export default function ChatComponent() {
       setSearchQuery('');
     };
 
+    // Sort employees by unread messages and then alphabetically
     const getSortedEmployees = () => {
       if (!Array.isArray(filteredEmployees) || !Array.isArray(conversations)) {
         return [];
@@ -358,20 +384,60 @@ export default function ChatComponent() {
       
       // Create a copy of filteredEmployees to sort
       return [...filteredEmployees].sort((a, b) => {
-        // Find unread counts for both employees
         const unreadCountA = getUnreadCount(a._id);
         const unreadCountB = getUnreadCount(b._id);
         
-        // Sort by unread count (higher count first)
-        return unreadCountB - unreadCountA;
+        // First sort by whether there are unread messages (users with unread messages first)
+        if (unreadCountB > 0 && unreadCountA === 0) return 1;
+        if (unreadCountA > 0 && unreadCountB === 0) return -1;
+        
+        // Then sort by the number of unread messages
+        if (unreadCountA !== unreadCountB) {
+          return unreadCountB - unreadCountA;
+        }
+        
+        // If unread counts are the same, sort by most recent message
+        const convA = conversations.find(conv => conv.userId === a._id);
+        const convB = conversations.find(conv => conv.userId === b._id);
+        
+        if (convA?.lastMessageDate && convB?.lastMessageDate) {
+          return new Date(convB.lastMessageDate) - new Date(convA.lastMessageDate);
+        }
+        
+        // If no messages or dates are the same, sort alphabetically
+        const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim().toLowerCase();
+        const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB);
       });
+    };
+
+    // Get total unread message count for badge display
+    const getTotalUnreadCount = () => {
+      if (!Array.isArray(conversations)) return 0;
+      return conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0);
     };
 
     return (
       <div className="flex h-screen bg-gray-900 text-white">
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3baca5]"></div>
+          </div>
+        )}
+      
         {/* Employee list sidebar */}
         <div className="w-1/3 p-4 border-r border-gray-700 flex flex-col">
-          <h2 className="text-lg font-bold mb-4">Employees</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Employees</h2>
+            
+            {/* Display total unread message count */}
+            {getTotalUnreadCount() > 0 && (
+              <div className="bg-red-500 text-white rounded-full px-2 py-1 text-xs font-bold animate-pulse">
+                {getTotalUnreadCount()} unread
+              </div>
+            )}
+          </div>
           
           {/* Search box */}
           <div className="mb-4 relative">
@@ -394,24 +460,42 @@ export default function ChatComponent() {
           
           {/* Employee list with scroll */}
           <div className="overflow-y-auto flex-1">
-          {Array.isArray(filteredEmployees) && filteredEmployees.length > 0 ? (
-           getSortedEmployees().map((emp) => {
+            {Array.isArray(filteredEmployees) && filteredEmployees.length > 0 ? (
+              getSortedEmployees().map((emp) => {
                 const unreadCount = getUnreadCount(emp._id);
+                
+                // Find conversation to get last message preview
+                const conversation = conversations.find(conv => conv.userId === emp._id);
+                const lastMessage = conversation?.lastMessage;
+                const lastMessageDate = conversation?.lastMessageDate ? 
+                  new Date(conversation.lastMessageDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
                 
                 return (
                   <div 
                     key={emp._id} 
                     className={`p-3 mb-2 border-b border-gray-700 cursor-pointer flex items-center gap-3 hover:bg-gray-800 rounded transition-colors ${
                       selectedUser && selectedUser._id === emp._id ? 'bg-gray-800 border-l-4 border-[#3baca5]' : ''
-                    }`}
+                    } ${unreadCount > 0 ? 'bg-gray-800 bg-opacity-50' : ''}`}
                     onClick={() => fetchMessages(emp._id)}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[#3baca5] flex items-center justify-center font-bold">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                      unreadCount > 0 ? 'bg-red-500' : 'bg-[#3baca5]'
+                    }`}>
                       {emp.firstName ? emp.firstName.charAt(0) : ''}
                       {emp.lastName ? emp.lastName.charAt(0) : ''}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{emp.firstName} {emp.lastName}</p>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex justify-between items-center">
+                        <p className={`font-medium ${unreadCount > 0 ? 'text-white font-bold' : ''}`}>
+                          {emp.firstName} {emp.lastName}
+                        </p>
+                        {lastMessageDate && (
+                          <span className="text-xs text-gray-400">{lastMessageDate}</span>
+                        )}
+                      </div>
+                      {lastMessage && (
+                        <p className="text-xs text-gray-400 truncate">{lastMessage}</p>
+                      )}
                       <p className="text-xs text-gray-400">{emp.role || 'Employee'}</p>
                     </div>
                     {unreadCount > 0 && (
