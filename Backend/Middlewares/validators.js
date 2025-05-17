@@ -146,5 +146,6 @@ module.exports = {
   addUserValidationRules,
   updateUserValidationRules,
   updateProfileValidationRules,
+  resetPasswordValidationRules,
   validate
 };

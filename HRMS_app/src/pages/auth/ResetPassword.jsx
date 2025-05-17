@@ -43,19 +43,6 @@ const ResetPassword = () => {
     setIsLoading(true);
     setError("");
     
-    // Validate passwords
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      setIsLoading(false);
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
-    
     try {
       const response = await fetch(`http://localhost:8080/api/auth/reset-password/${token}`, {
         method: "POST",
@@ -73,7 +60,12 @@ const ResetPassword = () => {
           navigate('/');
         }, 6000);
       } else {
-        setError(data.message || "An error occurred");
+        // Handle validation errors from backend
+        if (data.errors && data.errors.length > 0) {
+          setError(data.errors.map(err => err.msg).join(", "));
+        } else {
+          setError(data.message || "An error occurred");
+        }
       }
     } catch (error) {
       setError("An error occurred. Please try again.");
@@ -81,12 +73,13 @@ const ResetPassword = () => {
     setIsLoading(false);
   };
 
-  // Password requirements indicators
+  // Password requirements indicators 
   const hasMinLength = password.length >= 6;
+  const passwordsMatch = password === confirmPassword;
 
   return (
     <div className="min-h-screen bg-gray-900 relative overflow-hidden flex items-center justify-center p-4 w-full">
-      {/* Animated circuit board background - same as login page */}
+      {/* Animated circuit board background*/}
       <div className="absolute inset-0 opacity-20">
         {[...Array(20)].map((_, i) => (
           <div
@@ -217,9 +210,9 @@ const ResetPassword = () => {
                     {confirmPassword && (
                       <div className="mt-1">
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${password === confirmPassword ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                          <span className={`text-xs ${password === confirmPassword ? 'text-green-400' : 'text-red-400'}`}>
-                            {password === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
+                          <div className={`w-2 h-2 rounded-full ${passwordsMatch ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                          <span className={`text-xs ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
+                            {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
                           </span>
                         </div>
                       </div>

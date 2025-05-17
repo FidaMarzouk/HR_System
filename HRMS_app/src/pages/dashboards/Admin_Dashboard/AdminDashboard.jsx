@@ -30,6 +30,7 @@ import ChatBot from '../../ChatBot';
 import ChatComponent from '../../TeamChat';
 import HRDashboardHomepage from '../Admin_Dashboard/HRDashboardHomepage';
 import PersonalDashboard from '../Employee_Dashboard/EmployeeDashboardHomepage';
+import { getSocket } from '../../../socketService';
 
 // Circuit pattern for background
 const CircuitPattern = () => (
@@ -211,59 +212,31 @@ const AdminDashboard = () => {
     }
   };
   
-  // Add useEffect to fetch notification count when component mounts
   useEffect(() => {
-    fetchUnreadNotificationCount();
-    
-    // Set up interval to periodically refresh the count (every 30 seconds)
-    const interval = setInterval(() => {
-      fetchUnreadNotificationCount();
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
-  useEffect(() => {
-    fetchUnreadMessagesCount();
-    
-    // Set up interval to periodically refresh the count
-    const interval = setInterval(() => {
-      fetchUnreadMessagesCount();
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
-  useEffect(() => {
-    // Initialize socket connection
-    const socket = io('http://localhost:8080', {
-      withCredentials: true
-    });
-
-    // Listen for new notifications
+    const socket = getSocket();
+  
+    // Set up component-specific listeners
     socket.on('notification', () => {
-      // Increment unread count when a new notification arrives
       fetchUnreadNotificationCount();
     });
-
-    // Listen for notification updates (read/deleted)
+  
     socket.on('notificationUpdate', ({ type }) => {
       if (type === 'read' || type === 'readAll' || type === 'delete') {
-        // Refresh count when notifications are marked as read or deleted
         fetchUnreadNotificationCount();
       }
     });
-
-    // Cleanup on unmount
+  
+    // No need to disconnect on unmount, just remove listeners
     return () => {
-      socket.disconnect();
+      socket.off('notification');
+      socket.off('notificationUpdate');
     };
   }, []);
+
   useEffect(() => {
-    // Initialize socket connection (can reuse existing socket if available)
-    const socket = io('http://localhost:8080', {
-      withCredentials: true
-    });
+    const socket = getSocket();
   
-    // Listen for new chat messages
+    // Set up component-specific listeners
     socket.on('newMessage', (message) => {
       // Check if the message is for the current user
       if (message.receiver._id === user.id) {
@@ -272,17 +245,18 @@ const AdminDashboard = () => {
       }
     });
   
-    // Listen for messages being marked as read
     socket.on('messagesRead', () => {
       // Refresh count when messages are marked as read
       fetchUnreadMessagesCount();
     });
   
-    // Cleanup on unmount
+    // No need to disconnect on unmount, just remove listeners
     return () => {
       socket.disconnect();
     };
   }, [user.id]);
+
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());

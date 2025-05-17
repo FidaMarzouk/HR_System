@@ -15,14 +15,32 @@ const initializeSocket = (server) => {
     }
   });
 
-  // Add middleware to authenticate socket connections
-  io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error('Authentication error: Token missing'));
+io.use((socket, next) => {
+  try {
+    // Extract cookie from handshake headers
+    const cookies = socket.handshake.headers.cookie;
+    if (!cookies) {
+      return next(new Error('Authentication error: No cookies provided'));
     }
-  
-    const result = verifyToken(token);
+
+    // Parse cookies to find authToken
+    const cookieArray = cookies.split(';');
+    let authToken = null;
+    
+    for (const cookie of cookieArray) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'authToken') {
+        authToken = value;
+        break;
+      }
+    }
+
+    if (!authToken) {
+      return next(new Error('Authentication error: Auth token not found in cookies'));
+    }
+
+    // Verify the token
+    const result = verifyToken(authToken);
     
     if (!result.success) {
       if (result.error.name === 'TokenExpiredError') {
@@ -35,7 +53,11 @@ const initializeSocket = (server) => {
     
     socket.user = result.user;
     next();
-  });
+  } catch (error) {
+    console.error('Socket authentication error:', error);
+    next(new Error('Authentication error: ' + error.message));
+  }
+});
 
   io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);

@@ -1118,348 +1118,348 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
         </div>
       </div>
     )}
-{/* user Form*/}
-{(isEditing || isCreating) && (
-  <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-2 sm:p-4">
-    <form 
-    className="bg-[#2a2a2a] p-3 sm:p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] custom-scrollbar"
-      onSubmit={handleFormSubmit}
-    >
-      {errorMessage && (
-        
-        <div className="p-4 bg-[#e74c3c] text-white rounded-md mb-4 border-l-4 border-[#c0392b] animate-fadeIn">
-          <div className="flex items-center mb-2">
-            <FaRobot className="mr-2 text-xl" />
-            <span className="font-semibold">Form Validation Error</span>
-          </div>
-          <div className="whitespace-pre-line pl-6">
-            {errorMessage}
-          </div>
-        </div>
-      )}
-      <h3 className="text-xl font-semibold text-center mb-4 text-[#33adb4]">
-        {isEditing ? 'Edit' : 'Add'} Employee
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Profile Picture Upload */}
-        <div className="col-span-1 md:col-span-2">
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Profile Picture</label>
-          <input 
-            type="file" 
-            name="profilePicture" 
-            accept="image/png, image/jpeg" 
-            onChange={handleFileChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-          
-          {/* Show image preview if an image is selected */}
-          {previewImage && (
-            <img 
-              src={previewImage} 
-              alt="Profile Preview" 
-              className="mt-2 h-24 w-24 object-cover rounded-full border-2 border-[#33adb4] mx-auto" 
-            />
+    {/* user Form*/}
+    {(isEditing || isCreating) && (
+      <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-2 sm:p-4">
+        <form 
+        className="bg-[#2a2a2a] p-3 sm:p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] custom-scrollbar"
+          onSubmit={handleFormSubmit}
+        >
+          {errorMessage && (
+            
+            <div className="p-4 bg-[#e74c3c] text-white rounded-md mb-4 border-l-4 border-[#c0392b] animate-fadeIn">
+              <div className="flex items-center mb-2">
+                <FaRobot className="mr-2 text-xl" />
+                <span className="font-semibold">Form Validation Error</span>
+              </div>
+              <div className="whitespace-pre-line pl-6">
+                {errorMessage}
+              </div>
+            </div>
           )}
-        </div>
+          <h3 className="text-xl font-semibold text-center mb-4 text-[#33adb4]">
+            {isEditing ? 'Edit' : 'Add'} Employee
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Profile Picture Upload */}
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Profile Picture</label>
+              <input 
+                type="file" 
+                name="profilePicture" 
+                accept="image/png, image/jpeg" 
+                onChange={handleFileChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+              
+              {/* Show image preview if an image is selected */}
+              {previewImage && (
+                <img 
+                  src={previewImage} 
+                  alt="Profile Preview" 
+                  className="mt-2 h-24 w-24 object-cover rounded-full border-2 border-[#33adb4] mx-auto" 
+                />
+              )}
+            </div>
 
-        {/* First Name */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">First Name</label>
-          <input 
-            type="text" 
-            name="firstName" 
-            value={isEditing ? selectedEmployee?.firstName || "" : newEmployee?.firstName || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"  
-          />
-        </div>
+            {/* First Name */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">First Name</label>
+              <input 
+                type="text" 
+                name="firstName" 
+                value={isEditing ? selectedEmployee?.firstName || "" : newEmployee?.firstName || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"  
+              />
+            </div>
 
-        {/* Last Name */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Last Name</label>
-          <input 
-            type="text" 
-            name="lastName" 
-            value={isEditing ? selectedEmployee?.lastName || "" : newEmployee?.lastName || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-        </div>
+            {/* Last Name */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Last Name</label>
+              <input 
+                type="text" 
+                name="lastName" 
+                value={isEditing ? selectedEmployee?.lastName || "" : newEmployee?.lastName || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+            </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
-          <input 
-            type="email" 
-            name="email" 
-            value={isEditing ? selectedEmployee?.email || "" : newEmployee?.email || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-            required
-          />
-        </div>
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
+              <input 
+                type="email" 
+                name="email" 
+                value={isEditing ? selectedEmployee?.email || "" : newEmployee?.email || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+                required
+              />
+            </div>
 
-        {/* Personal Email */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Personal Email</label>
-          <input 
-            type="email" 
-            name="personalEmail" 
-            value={isEditing ? selectedEmployee?.personalEmail || "" : newEmployee?.personalEmail || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-            required
-          />
-        </div>
+            {/* Personal Email */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Personal Email</label>
+              <input 
+                type="email" 
+                name="personalEmail" 
+                value={isEditing ? selectedEmployee?.personalEmail || "" : newEmployee?.personalEmail || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+                required
+              />
+            </div>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Phone</label>
-          <input 
-            type="text" 
-            name="phone" 
-            value={isEditing ? selectedEmployee?.phone || "" : newEmployee?.phone || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-        </div>
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Phone</label>
+              <input 
+                type="number" 
+                name="phone" 
+                value={isEditing ? selectedEmployee?.phone || "" : newEmployee?.phone || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+            </div>
 
-        {/* Skills */}
-        <div className="col-span-1 md:col-span-2">
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Skills (comma-separated)</label>
-          <input 
-            type="text" 
-            name="skills" 
-            value={isEditing ? 
-              (Array.isArray(selectedEmployee?.skills) ? selectedEmployee?.skills.join(', ') : selectedEmployee?.skills || "") : 
-              (Array.isArray(newEmployee?.skills) ? newEmployee?.skills.join(', ') : newEmployee?.skills || "")} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-            placeholder="React, Node.js, MongoDB, etc."
-          />
-        </div>
+            {/* Skills */}
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Skills (comma-separated)</label>
+              <input 
+                type="text" 
+                name="skills" 
+                value={isEditing ? 
+                  (Array.isArray(selectedEmployee?.skills) ? selectedEmployee?.skills.join(', ') : selectedEmployee?.skills || "") : 
+                  (Array.isArray(newEmployee?.skills) ? newEmployee?.skills.join(', ') : newEmployee?.skills || "")} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+                placeholder="React, Node.js, MongoDB, etc."
+              />
+            </div>
 
-        {/* Hire Date */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Hire Date</label>
-          <input 
-            type="date" 
-            name="hireDate" 
-            value={isEditing ? selectedEmployee?.hireDate?.slice(0, 10) || "" : newEmployee?.hireDate || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-        </div>
+            {/* Hire Date */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Hire Date</label>
+              <input 
+                type="date" 
+                name="hireDate" 
+                value={isEditing ? selectedEmployee?.hireDate?.slice(0, 10) || "" : newEmployee?.hireDate || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+            </div>
 
-        {/* Role */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Role</label>
-          <select
-            name="role"
-            value={isEditing ? selectedEmployee?.role || "" : newEmployee?.role || ""}
-            onChange={handleFormChange}
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"
-            disabled={isEditing}
-          >
-            <option value="">Select Role</option>
-            <option value="employee">Employee</option>
-            <option value="manager">Manager</option>
-          </select>
-        </div>
+            {/* Role */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Role</label>
+              <select
+                name="role"
+                value={isEditing ? selectedEmployee?.role || "" : newEmployee?.role || ""}
+                onChange={handleFormChange}
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"
+                disabled={isEditing}
+              >
+                <option value="">Select Role</option>
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+              </select>
+            </div>
 
-        {/* Position */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Position</label>
-          <input 
-            type="text" 
-            name="position" 
-            value={isEditing ? selectedEmployee?.position || "" : newEmployee?.position || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-        </div>
+            {/* Position */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Position</label>
+              <input 
+                type="text" 
+                name="position" 
+                value={isEditing ? selectedEmployee?.position || "" : newEmployee?.position || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+            </div>
 
-        {/* Salary */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Salary</label>
-          <input 
-            type="number" 
-            name="salary" 
-            value={isEditing ? selectedEmployee?.salary || "" : newEmployee?.salary || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-        </div>
+            {/* Salary */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Salary</label>
+              <input 
+                type="number" 
+                name="salary" 
+                value={isEditing ? selectedEmployee?.salary || "" : newEmployee?.salary || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+            </div>
 
-        {/* Department Selection */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Department</label>
-          <select
-            name="departmentId"
-            value={isEditing ? (selectedEmployee?.departmentId?._id || selectedEmployee?.departmentId || "") : newEmployee?.departmentId || ""}
-            onChange={handleFormChange}
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"
-          >
-            <option value="">Select Department</option>
-            {departments.map((dept) => (
-              <option key={dept._id} value={String(dept._id)}>{dept.name}</option>
-            ))}
-          </select>
-        </div>
+            {/* Department Selection */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Department</label>
+              <select
+                name="departmentId"
+                value={isEditing ? (selectedEmployee?.departmentId?._id || selectedEmployee?.departmentId || "") : newEmployee?.departmentId || ""}
+                onChange={handleFormChange}
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"
+              >
+                <option value="">Select Department</option>
+                {departments.map((dept) => (
+                  <option key={dept._id} value={String(dept._id)}>{dept.name}</option>
+                ))}
+              </select>
+            </div>
 
-        {/* Password Field */}
-        <div>
-          <label className="block text-sm font-semibold mb-1 text-gray-300">Password</label>
-          <input 
-            type="password" 
-            name="password" 
-            value={isEditing ? selectedEmployee?.password || "" : newEmployee?.password || ""} 
-            onChange={handleFormChange} 
-            className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-          />
-        </div>
+            {/* Password Field */}
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Password</label>
+              <input 
+                type="password" 
+                name="password" 
+                value={isEditing ? selectedEmployee?.password || "" : newEmployee?.password || ""} 
+                onChange={handleFormChange} 
+                className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
+              />
+            </div>
 
-        {/* Submit & Cancel Buttons */}
-        <div className="col-span-1 md:col-span-2 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2 mt-2">
-          <button 
-            type="submit" 
-            className="w-full sm:w-1/2 px-4 py-2 bg-[#33adb4] text-white rounded-lg hover:bg-[#2a8c92] transition-colors shadow-md"
-          >
-            {isEditing ? 'Save Changes' : 'Add Employee'}
-          </button>
-          <button 
-            type="button" 
-            onClick={handleCancel} 
-            className="w-full sm:w-1/2 px-4 py-2 bg-[#444] text-white rounded-lg hover:bg-[#555] transition-colors shadow-md"
-          >
-            Cancel
-          </button>
+            {/* Submit & Cancel Buttons */}
+            <div className="col-span-1 md:col-span-2 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2 mt-2">
+              <button 
+                type="submit" 
+                className="w-full sm:w-1/2 px-4 py-2 bg-[#33adb4] text-white rounded-lg hover:bg-[#2a8c92] transition-colors shadow-md"
+              >
+                {isEditing ? 'Save Changes' : 'Add Employee'}
+              </button>
+              <button 
+                type="button" 
+                onClick={handleCancel} 
+                className="w-full sm:w-1/2 px-4 py-2 bg-[#444] text-white rounded-lg hover:bg-[#555] transition-colors shadow-md"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    )}
+    {/* Department Form*/}
+    {(isCreatingDept || isEditingDept) && (
+      <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-4">
+        <div className="bg-[#2a2a2a] p-4 sm:p-6 rounded-lg shadow-lg border border-[#444] w-full max-w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 text-[#33adb4]">
+            {isEditingDept ? "Edit Department" : "Add Department"}
+          </h2>
+
+          {/* Error Message */}
+          {formError && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-xs sm:text-sm">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {formError}
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={isEditingDept ? handleUpdateDepartment : handleCreateDepartment}>
+            {/* Department Name */}
+            <div className="mb-4">
+              <label className="block text-xs sm:text-sm font-semibold mb-1 text-gray-300">Department Name</label>
+              <input
+                type="text"
+                name="name"
+                value={isEditingDept ? selectedDepartment.name : newDepartment.name}
+                onChange={isEditingDept 
+                  ? (e) => setSelectedDepartment({ ...selectedDepartment, name: e.target.value }) 
+                  : handleDeptFormChange}
+                className="w-full p-2 text-xs sm:text-sm border border-[#444] rounded bg-[#333] text-gray-300"
+              />
+            </div>
+
+            {/* Assign Manager */}
+            <div className="mb-4">
+              <label className="block text-xs sm:text-sm font-semibold mb-1 text-gray-300">Assign Manager</label>
+              <select
+                name="managerId"
+                value={isEditingDept ? selectedDepartment.managerId?._id || selectedDepartment.managerId || "" : newDepartment.managerId || ""}
+                onChange={isEditingDept 
+                  ? (e) => setSelectedDepartment({ ...selectedDepartment, managerId: e.target.value }) 
+                  : handleDeptFormChange}
+                className="w-full p-2 text-xs sm:text-sm border border-[#444] rounded bg-[#333] text-gray-300"
+              >
+                <option value="">Select Manager</option>
+                {availableManagers.length > 0 ? (
+                  availableManagers.map((manager) => (
+                    <option key={manager._id} value={manager._id}>
+                      {manager.firstName} {manager.lastName}
+                      {manager.currentDepartment && ` (Current: ${manager.currentDepartment})`}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No available managers</option>
+                )}
+              </select>
+              <p className="text-xs text-amber-400 mt-1">
+                Note: If manager currently manages another department, they will be reassigned.
+              </p>
+            </div>
+
+            {/* Employee Selection Section */}
+            <div className="mb-4">
+              <label className="block text-xs sm:text-sm font-semibold mb-2 text-gray-300">Assign Employees</label>
+              <div className="max-h-60 overflow-y-auto border border-[#444] rounded p-2 bg-[#333]">
+                {assignableEmployees.length > 0 ? (
+                  assignableEmployees.map((employee) => (
+                    <div key={employee._id} className="flex items-center mb-1 sm:mb-2 hover:bg-[#3a3a3a] p-1 rounded">
+                      <input
+                        type="checkbox"
+                        id={`employee-${employee._id}`}
+                        checked={selectedEmployeeIds.includes(employee._id)}
+                        onChange={(e) => handleEmployeeSelection(employee._id, e.target.checked)}
+                        className="mr-2 accent-[#33adb4] scale-75 sm:scale-100"
+                      />
+                      <label htmlFor={`employee-${employee._id}`} className="text-xs sm:text-sm flex-1">
+                        <span className="text-gray-300">
+                          {employee.firstName} {employee.lastName} - {employee.position}
+                        </span>
+                        {employee.departmentId && (
+                          <span className="text-gray-500 ml-2 text-xs">
+                            (Current: {typeof employee.departmentId === 'object' 
+                              ? employee.departmentId.name 
+                              : employee.departmentId})
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-2 text-xs sm:text-sm">No employees available</p>
+                )}
+              </div>
+              <p className="text-xs text-amber-400 mt-1">
+                Note: Selected employees will be reassigned from their current departments.
+              </p>
+            </div>
+
+            {/* Buttons*/}
+            <div className="flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2 mt-4">
+              <button
+                type="submit"
+                className="w-full sm:w-1/2 px-4 py-2 bg-[#33adb4] text-white rounded-lg hover:bg-[#2a8c92] transition-colors shadow-md text-sm sm:text-base"
+              >
+                {isEditingDept ? "Save Changes" : "Add Department"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCancelDept}
+                className="w-full sm:w-1/2 px-4 py-2 bg-[#444] text-white rounded-lg hover:bg-[#555] transition-colors shadow-md text-sm sm:text-base"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </form>
-  </div>
-)}
-{/* Department Form*/}
-{(isCreatingDept || isEditingDept) && (
-  <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-4">
-    <div className="bg-[#2a2a2a] p-4 sm:p-6 rounded-lg shadow-lg border border-[#444] w-full max-w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar">
-      <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 text-[#33adb4]">
-        {isEditingDept ? "Edit Department" : "Add Department"}
-      </h2>
-
-      {/* Error Message */}
-      {formError && (
-        <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-xs sm:text-sm">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            {formError}
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={isEditingDept ? handleUpdateDepartment : handleCreateDepartment}>
-        {/* Department Name */}
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-semibold mb-1 text-gray-300">Department Name</label>
-          <input
-            type="text"
-            name="name"
-            value={isEditingDept ? selectedDepartment.name : newDepartment.name}
-            onChange={isEditingDept 
-              ? (e) => setSelectedDepartment({ ...selectedDepartment, name: e.target.value }) 
-              : handleDeptFormChange}
-            className="w-full p-2 text-xs sm:text-sm border border-[#444] rounded bg-[#333] text-gray-300"
-          />
-        </div>
-
-        {/* Assign Manager */}
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-semibold mb-1 text-gray-300">Assign Manager</label>
-          <select
-            name="managerId"
-            value={isEditingDept ? selectedDepartment.managerId?._id || selectedDepartment.managerId || "" : newDepartment.managerId || ""}
-            onChange={isEditingDept 
-              ? (e) => setSelectedDepartment({ ...selectedDepartment, managerId: e.target.value }) 
-              : handleDeptFormChange}
-            className="w-full p-2 text-xs sm:text-sm border border-[#444] rounded bg-[#333] text-gray-300"
-          >
-            <option value="">Select Manager</option>
-            {availableManagers.length > 0 ? (
-              availableManagers.map((manager) => (
-                <option key={manager._id} value={manager._id}>
-                  {manager.firstName} {manager.lastName}
-                  {manager.currentDepartment && ` (Current: ${manager.currentDepartment})`}
-                </option>
-              ))
-            ) : (
-              <option disabled>No available managers</option>
-            )}
-          </select>
-          <p className="text-xs text-amber-400 mt-1">
-            Note: If manager currently manages another department, they will be reassigned.
-          </p>
-        </div>
-
-        {/* Employee Selection Section */}
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-semibold mb-2 text-gray-300">Assign Employees</label>
-          <div className="max-h-60 overflow-y-auto border border-[#444] rounded p-2 bg-[#333]">
-            {assignableEmployees.length > 0 ? (
-              assignableEmployees.map((employee) => (
-                <div key={employee._id} className="flex items-center mb-1 sm:mb-2 hover:bg-[#3a3a3a] p-1 rounded">
-                  <input
-                    type="checkbox"
-                    id={`employee-${employee._id}`}
-                    checked={selectedEmployeeIds.includes(employee._id)}
-                    onChange={(e) => handleEmployeeSelection(employee._id, e.target.checked)}
-                    className="mr-2 accent-[#33adb4] scale-75 sm:scale-100"
-                  />
-                  <label htmlFor={`employee-${employee._id}`} className="text-xs sm:text-sm flex-1">
-                    <span className="text-gray-300">
-                      {employee.firstName} {employee.lastName} - {employee.position}
-                    </span>
-                    {employee.departmentId && (
-                      <span className="text-gray-500 ml-2 text-xs">
-                        (Current: {typeof employee.departmentId === 'object' 
-                          ? employee.departmentId.name 
-                          : employee.departmentId})
-                      </span>
-                    )}
-                  </label>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-2 text-xs sm:text-sm">No employees available</p>
-            )}
-          </div>
-          <p className="text-xs text-amber-400 mt-1">
-            Note: Selected employees will be reassigned from their current departments.
-          </p>
-        </div>
-
-        {/* Buttons - Responsive */}
-        <div className="flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2 mt-4">
-          <button
-            type="submit"
-            className="w-full sm:w-1/2 px-4 py-2 bg-[#33adb4] text-white rounded-lg hover:bg-[#2a8c92] transition-colors shadow-md text-sm sm:text-base"
-          >
-            {isEditingDept ? "Save Changes" : "Add Department"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCancelDept}
-            className="w-full sm:w-1/2 px-4 py-2 bg-[#444] text-white rounded-lg hover:bg-[#555] transition-colors shadow-md text-sm sm:text-base"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+    )}
     </div>
     
 
