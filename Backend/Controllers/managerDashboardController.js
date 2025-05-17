@@ -64,8 +64,7 @@ exports.getManagerDashboardData = async (req, res) => {
     // Leave management metrics
     const pendingLeaveRequests = await getPendingLeaveRequests(managerId);
     const leaveApprovalRate = await getLeaveApprovalRate(managerId, startDate, endDate);
-    const departmentLeaveCalendar = await getDepartmentLeaveCalendar(departmentData._id, startDate, endDate);
-    const leaveDistribution = await getLeaveDistributionByType(teamIds, startDate, endDate);
+    const LeaveCalendar = await getLeaveCalendar(departmentData._id, startDate, endDate);
     
     // Team productivity metrics
     const avgProductionHours = await getAverageProductionHours(teamIds, startDate, endDate);
@@ -76,7 +75,6 @@ exports.getManagerDashboardData = async (req, res) => {
     const unreadMessagesCount = await getUnreadMessagesCount(managerId);
     const responseTime = await getResponseTimeToMessages(managerId, startDate, endDate);
     const teamEngagement = await getTeamEngagementInChats(teamIds, startDate, endDate);
-    const teamDailyActivity = await getTeamDailyMessageActivity(teamIds, startDate, endDate);
     
     // Department calendar
     const upcomingEvents = await getUpcomingEvents(departmentData._id, teamIds, startDate, endDate);
@@ -102,8 +100,7 @@ exports.getManagerDashboardData = async (req, res) => {
       leaveManagementMetrics: {
         pendingLeaveRequests,
         leaveApprovalRate,
-        departmentLeaveCalendar,
-        leaveDistribution
+        LeaveCalendar
       },
       teamProductivity: {
         avgProductionHours,
@@ -113,8 +110,7 @@ exports.getManagerDashboardData = async (req, res) => {
       communicationMetrics: {
         unreadMessagesCount,
         responseTime,
-        teamEngagement,
-        dailyMessages: teamDailyActivity.dailyMessages 
+        teamEngagement
       },
       calendarMetrics: {
         upcomingEvents,
@@ -364,110 +360,72 @@ async function getLeaveApprovalRate(managerId, startDate, endDate) {
   };
 }
 
-async function getDepartmentLeaveCalendar(departmentId, startDate, endDate) {
-    // Find all employees in the department
-    const employees = await User.find({ departmentId: departmentId });
-    const employeeIds = employees.map(emp => emp._id);
-    
-    // Find all approved leaves in the date range
-    const leaves = await LeaveRequest.find({
-      employeeId: { $in: employeeIds },
-      status: { $in: ['Manager Approved', 'Admin Approved', 'CEO Approved'] },
-      startDate: { $lte: endDate },
-      endDate: { $gte: startDate }
-    }).populate('employeeId', 'firstName lastName');
-    
-    // Format the leaves for list display
-    const leavesList = leaves.map(leave => ({
-      id: leave._id,
-      employee: `${leave.employeeId.firstName} ${leave.employeeId.lastName}`,
-      startDate: leave.startDate,
-      endDate: leave.endDate,
-      reason: leave.reason,
-      status: leave.status
-    }));
-    
-    // Format the leaves for calendar display by creating day-by-day entries
-    const leavesByDay = {};
-    
-    // For each leave, create entries for each day the leave spans
-    leaves.forEach(leave => {
-      const currentDate = new Date(leave.startDate);
-      const lastDate = new Date(leave.endDate);
-      
-      // Add one day to last date to include it in the range
-      lastDate.setDate(lastDate.getDate() + 1);
-      
-      while (currentDate < lastDate) {
-        const dateKey = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-        
-        if (!leavesByDay[dateKey]) {
-          leavesByDay[dateKey] = [];
-        }
-        
-        leavesByDay[dateKey].push({
-          id: leave._id,
-          employee: `${leave.employeeId.firstName} ${leave.employeeId.lastName}`,
-          reason: leave.reason,
-          status: leave.status
-        });
-        
-        // Move to next day
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    });
-    
-    return {
-      leavesList, // Original list format for backward compatibility
-      leavesByDay, // Calendar-friendly format with day-by-day entries
-      // Include the date range for the frontend
-      calendarRange: {
-        startDate,
-        endDate
-      }
-    };
-}
-
-async function getLeaveDistributionByType(teamIds, startDate, endDate) {
-  const leaveDistribution = await LeaveRequest.aggregate([
-    {
-      $match: {
-        employeeId: { $in: teamIds.map(id => new mongoose.Types.ObjectId(id)) },
-        startDate: { $lte: endDate },
-        endDate: { $gte: startDate },
-        status: { $in: ['Manager Approved', 'Admin Approved', 'CEO Approved'] }
-      }
-    },
-    {
-      $group: {
-        _id: '$reason',
-        count: { $sum: 1 },
-        days: {
-          $sum: {
-            $ceil: {
-              $divide: [
-                { $subtract: [
-                  { $cond: [{ $lt: ['$endDate', endDate] }, '$endDate', endDate] },
-                  { $cond: [{ $gt: ['$startDate', startDate] }, '$startDate', startDate] }
-                ]},
-                86400000 // ms in a day
-              ]
-            }
-          }
-        }
-      }
-    },
-    {
-      $sort: { days: -1 }
-    }
-  ]);
+async function getLeaveCalendar(departmentId, startDate, endDate) {
+  // Find all employees in the department (for filtering the list view)
+  const departmentEmployees = await User.find({ departmentId: departmentId });
+  const departmentEmployeeIds = departmentEmployees.map(emp => emp._id);
   
-  // Format the distribution
-  return leaveDistribution.map(item => ({
-    type: item._id,
-    count: item.count,
-    days: item.days
+  // Find ALL approved leaves in the date range for the calendar view
+  // No longer filtering by employeeId
+  const allLeaves = await LeaveRequest.find({
+    status: { $in: ['Admin Approved', 'CEO Approved'] },
+    startDate: { $lte: endDate },
+    endDate: { $gte: startDate }
+  }).populate('employeeId', 'firstName lastName departmentId');
+  
+  // Find department leaves for the list view (only employees in this department)
+  const departmentLeaves = allLeaves.filter(leave => 
+    departmentEmployeeIds.some(id => id.equals(leave.employeeId._id))
+  );
+  
+  // Format the department leaves for list display (only department employees)
+  const leavesList = departmentLeaves.map(leave => ({
+    id: leave._id,
+    employee: `${leave.employeeId.firstName} ${leave.employeeId.lastName}`,
+    startDate: leave.startDate,
+    endDate: leave.endDate,
+    reason: leave.reason,
+    status: leave.status
   }));
+  
+  // Format ALL leaves for calendar display (all employees, not just from this department)
+  const leavesByDay = {};
+  
+  // For each leave, create entries for each day the leave spans
+  allLeaves.forEach(leave => {
+    const currentDate = new Date(leave.startDate);
+    const lastDate = new Date(leave.endDate);
+    // Add one day to last date to include it in the range
+    lastDate.setDate(lastDate.getDate() + 1);
+    
+    while (currentDate < lastDate) {
+      const dateKey = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      
+      if (!leavesByDay[dateKey]) {
+        leavesByDay[dateKey] = [];
+      }
+      
+      leavesByDay[dateKey].push({
+        id: leave._id,
+        employee: `${leave.employeeId.firstName} ${leave.employeeId.lastName}`,
+        reason: leave.reason,
+        status: leave.status
+      });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  });
+  
+  return {
+    leavesList, // Only department employees for the list view
+    leavesByDay, // ALL employees for the calendar view
+    // Include the date range for the frontend
+    calendarRange: {
+      startDate,
+      endDate
+    }
+  };
 }
 
 // Helper Functions for Team Productivity Metrics
@@ -847,43 +805,10 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
     return {
       averageResponseTimeMinutes: avgResponseTime.toFixed(2),
       responsesAnalyzed: responsesCount,
-      responseTimeDistribution: {
-        under5Minutes: calculateResponseTimeDistribution(conversations, 0, 5),
-        under15Minutes: calculateResponseTimeDistribution(conversations, 0, 15),
-        under60Minutes: calculateResponseTimeDistribution(conversations, 0, 60),
-        over60Minutes: calculateResponseTimeDistribution(conversations, 60, Infinity)
-      }
     };
   }
   
-  // Helper function for response time distribution
-  function calculateResponseTimeDistribution(conversations, minMinutes, maxMinutes) {
-    let count = 0;
-    let total = 0;
-    
-    Object.values(conversations).forEach(convo => {
-      if (convo.receivedMessages.length > 0 && convo.sentMessages.length > 0) {
-        convo.receivedMessages.forEach(receivedMsg => {
-          const response = convo.sentMessages.find(sentMsg => 
-            sentMsg.timestamp > receivedMsg.timestamp
-          );
-          
-          if (response) {
-            const responseTimeMinutes = (response.timestamp - receivedMsg.timestamp) / (1000 * 60);
-            total++;
-            if (responseTimeMinutes >= minMinutes && responseTimeMinutes < maxMinutes) {
-              count++;
-            }
-          }
-        });
-      }
-    });
-    
-    return {
-      count,
-      percentage: total > 0 ? ((count / total) * 100).toFixed(2) : 0
-    };
-  }
+  
   
   // Calculate team engagement metrics in chats
   async function getTeamEngagementInChats(teamIds, startDate, endDate) {
@@ -957,65 +882,6 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
       mostActiveUsers
     };
   }
-  
-  // Get daily message activity for team engagement chart
-  async function getTeamDailyMessageActivity(teamIds, startDate, endDate) {
-    // Ensure dates are properly formatted
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // Create an array to store daily message counts
-    const dailyMessages = [];
-    
-    // Get all messages sent by team members in the date range
-    const allTeamMessages = await Chat.find({
-      sender: { $in: teamIds },
-      createdAt: { $gte: start, $lte: end }
-    });
-    
-    // Create a map to track messages per day
-    const messagesByDay = {};
-    
-    // Initialize the date range with zero counts
-    let currentDate = new Date(start);
-    while (currentDate <= end) {
-      const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-      messagesByDay[dateString] = 0;
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    // Count messages for each day
-    allTeamMessages.forEach(msg => {
-      const msgDate = msg.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD format
-      if (messagesByDay[msgDate] !== undefined) {
-        messagesByDay[msgDate]++;
-      }
-    });
-    
-    // Convert the map to an array format suitable for the chart
-    Object.entries(messagesByDay).forEach(([date, count]) => {
-      // Format date to be more readable (e.g., "Jan 15" instead of "2025-01-15")
-      const formattedDate = new Date(date);
-      const displayDate = formattedDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
-      });
-      
-      dailyMessages.push({
-        date: displayDate,
-        fullDate: date, // Keep the full date for sorting or additional processing
-        count: count
-      });
-    });
-    
-    // Sort by date ascending
-    dailyMessages.sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate));
-    return {
-      dailyMessages,
-      totalMessages: allTeamMessages.length,
-      averageMessagesPerDay: (allTeamMessages.length / Object.keys(messagesByDay).length).toFixed(2)
-    };
-  }
     
   {/* Get upcoming department and team events*/}
   async function getUpcomingEvents(departmentId, teamIds, startDate, endDate) {
@@ -1078,7 +944,6 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
       return {
         overallParticipationRate: "0",
         eventTypes: {},
-        trendByWeek: []
       };
     }
   
@@ -1086,21 +951,9 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
     let acceptedCount = 0;
     let totalInvites = 0;
     const eventTypeStats = {};
-    const weeklyTrend = {};
   
     completedEvents.forEach(event => {
-      // Get week number for trending
-      const weekNumber = getWeekNumber(event.startDateTime);
-      const weekKey = `${event.startDateTime.getFullYear()}-W${weekNumber}`;
-      
-      if (!weeklyTrend[weekKey]) {
-        weeklyTrend[weekKey] = {
-          accepted: 0,
-          total: 0,
-          weekStart: getStartOfWeek(event.startDateTime)
-        };
-      }
-      
+
       // Track by event type
       if (!eventTypeStats[event.eventType]) {
         eventTypeStats[event.eventType] = {
@@ -1113,12 +966,10 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
         if (teamIds.some(id => id.toString() === user.userId?.toString())) {
           totalInvites++;
           eventTypeStats[event.eventType].total++;
-          weeklyTrend[weekKey].total++;
           
           if (user.status === 'accepted') {
             acceptedCount++;
             eventTypeStats[event.eventType].accepted++;
-            weeklyTrend[weekKey].accepted++;
           }
         }
       });
@@ -1135,22 +986,9 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
         participationRate: stats.total > 0 ? Math.round((stats.accepted / stats.total) * 100) : 0
       };
     });
-    
-    // Sort weekly trend by date
-    const sortedWeeklyTrend = Object.entries(weeklyTrend)
-      .sort(([weekA], [weekB]) => weekA.localeCompare(weekB))
-      .map(([week, stats]) => ({
-        week,
-        weekStart: stats.weekStart,
-        participationRate: stats.total > 0 ? Math.round((stats.accepted / stats.total) * 100) : 0,
-        totalInvites: stats.total,
-        accepted: stats.accepted
-      }));
-      
     return {
       overallParticipationRate: overallRate.toFixed(2),
       eventTypes: eventTypesWithRates,
-      trendByWeek: sortedWeeklyTrend
     };
   }
     // Get employee skills distribution for the team

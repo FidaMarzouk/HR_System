@@ -12,6 +12,10 @@ module.exports = withMT({
         }
       },
       keyframes: {
+        pulse: {
+          '0%, 100%': { opacity: '0.2' },
+          '50%': { opacity: '0.4' },
+        },
         blob: {
           '0%': {
             transform: 'translate(0px, 0px) scale(1)',
@@ -36,6 +40,7 @@ module.exports = withMT({
         },
       },
       animation: {
+        pulse: 'pulse 2s infinite ease-in-out',
         blob: 'blob 7s infinite',
         float: 'float 6s ease-in-out infinite',
       },

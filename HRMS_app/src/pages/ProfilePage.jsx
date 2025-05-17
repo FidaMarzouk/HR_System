@@ -236,7 +236,7 @@ const ProfilePage = () => {
         phone: formData.phone,
         position: formData.position,
         birthdate: formData.birthdate,
-        age: age,
+        ...(age !== null ? { age } : {}),
         skills: formData.skills
       };
       

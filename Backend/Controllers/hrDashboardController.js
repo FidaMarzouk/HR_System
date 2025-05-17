@@ -74,7 +74,6 @@ exports.getHRDashboardData = async (req, res) => {
     // Communication Analytics
     const peakCommunicationTimes = await getPeakCommunicationTimes(startDate, endDate);
     const messagesByDepartment = await getMessagesByDepartment(startDate, endDate);
-    const notificationRatesByType = await getNotificationRatesByType(startDate, endDate);
     const averageResponseTime = await getAverageResponseTime(startDate, endDate);
 
     res.status(200).json({
@@ -109,7 +108,6 @@ exports.getHRDashboardData = async (req, res) => {
       communicationAnalytics: {
         peakCommunicationTimes,
         messagesByDepartment,
-        notificationRatesByType,
         averageResponseTime
       }
     });
@@ -178,7 +176,6 @@ async function getAttendanceByDepartment(startDate, endDate) {
   
   return attendanceData;
 }
-
 
 async function getAbsenteeismTrend(startDate, endDate) {
   // Generate series of dates for the x-axis
@@ -696,35 +693,6 @@ async function getMessagesByDepartment(startDate, endDate) {
   return messageData;
 }
 
-async function getNotificationRatesByType(startDate, endDate) {
-  const notificationData = await Notification.aggregate([
-    {
-      $match: {
-        createdAt: { $gte: startDate, $lte: endDate }
-      }
-    },
-    {
-      $group: {
-        _id: '$type',
-        total: { $sum: 1 },
-        read: { $sum: { $cond: [{ $eq: ['$isRead', true] }, 1, 0] } }
-      }
-    },
-    {
-      $project: {
-        notificationType: '$_id',
-        total: 1,
-        read: 1,
-        readRate: { $multiply: [{ $divide: ['$read', '$total'] }, 100] }
-      }
-    },
-    {
-      $sort: { total: -1 }
-    }
-  ]);
-  
-  return notificationData;
-}
 async function getAverageResponseTime(startDate, endDate) {
   // Query to find all chats within the specified time range
   const chats = await Chat.find({
@@ -783,67 +751,11 @@ async function getAverageResponseTime(startDate, endDate) {
   const averageResponseTimeMs = responseCount > 0 ? totalResponseTime / responseCount : 0;
   const averageResponseTimeMinutes = averageResponseTimeMs / (1000 * 60);
   
-  // Get response time distribution for chart data
-  const responseTimeDistribution = getResponseTimeDistribution(conversations);
-  
   return {
     averageResponseTime: parseFloat(averageResponseTimeMinutes.toFixed(2)),
     responseCount: responseCount,
-    responseTimeDistribution: responseTimeDistribution,
     timeUnit: 'minutes'
   };
-}
-
-// Helper function to categorize response times for distribution chart
-function getResponseTimeDistribution(conversations) {
-  // Create buckets for response time ranges (in minutes)
-  const distribution = {
-    'Under 5 min': 0,
-    '5-15 min': 0,
-    '15-30 min': 0,
-    '30-60 min': 0,
-    'Over 60 min': 0
-  };
-  
-  Object.values(conversations).forEach(messages => {
-    if (messages.length < 2) return;
-    
-    for (let i = 1; i < messages.length; i++) {
-      const currentMessage = messages[i];
-      const previousMessage = messages[i-1];
-      
-      // Only count as response if sender changed (different person responding)
-      // Compare string IDs instead of using equals()
-      if (currentMessage.sender !== previousMessage.sender) {
-        // Calculate time difference in milliseconds
-        const responseTimeMs = new Date(currentMessage.timestamp) - new Date(previousMessage.timestamp);
-        
-        // Only include reasonable response times (greater than 0 and less than 7 days)
-        if (responseTimeMs > 0 && responseTimeMs < 7 * 24 * 60 * 60 * 1000) {
-          const responseTimeMinutes = responseTimeMs / (1000 * 60);
-          
-          // Categorize the response time
-          if (responseTimeMinutes < 5) {
-            distribution['Under 5 min']++;
-          } else if (responseTimeMinutes < 15) {
-            distribution['5-15 min']++;
-          } else if (responseTimeMinutes < 30) {
-            distribution['15-30 min']++;
-          } else if (responseTimeMinutes < 60) {
-            distribution['30-60 min']++;
-          } else {
-            distribution['Over 60 min']++;
-          }
-        }
-      }
-    }
-  });
-  
-  // Convert to array format for charts
-  return Object.entries(distribution).map(([range, count]) => ({
-    range,
-    count
-  }));
 }
 
 // Utility function to generate a date range

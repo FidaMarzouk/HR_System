@@ -91,7 +91,7 @@ const ResetPassword = () => {
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="absolute bg-[#23A49B]/20 h-px"
+            className="absolute bg-[#23A49B]/20 h-px animate-pulse"
             style={{
               top: `${Math.random() * 100}%`,
               left: 0,
@@ -103,7 +103,7 @@ const ResetPassword = () => {
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="absolute bg-[#23A49B]/20 w-px"
+            className="absolute bg-[#23A49B]/20 h-px animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: 0,
@@ -115,7 +115,7 @@ const ResetPassword = () => {
       </div>
 
       {/* Main container */}
-      <div className="w-full max-w-md px-4 sm:px-6 relative">
+      <div className="w-full max-w-xl px-4 sm:px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-[#23A49B]/20 to-transparent blur-3xl" />
         
         <div className="relative bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 overflow-hidden p-6 sm:p-8">
@@ -275,13 +275,6 @@ const ResetPassword = () => {
           )}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.4; }
-        }
-      `}</style>
     </div>
   );
 };

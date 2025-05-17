@@ -125,7 +125,7 @@ const CEODashboard = () => {
           <MessageCircle className="w-5 h-5" />
           {unreadMessages > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              {unreadMessages > 9 ? '9+' : unreadMessages}
+              {unreadMessages}
             </span>
           )}
         </div>
@@ -138,7 +138,9 @@ const CEODashboard = () => {
         <div className="relative">
           <Bell className="w-5 h-5" />
           {unreadNotifications > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center" />
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+              {unreadNotifications}
+            </span>
           )}
         </div>
       ),
@@ -308,7 +310,6 @@ const CEODashboard = () => {
   };
 
   const handleCancelLogout = () => {
-    console.log("Cancel button clicked, closing modal...");
     setShowLogoutModal(false);
   };
   
@@ -534,24 +535,32 @@ const CEODashboard = () => {
                   >
                     <Activity className="h-5 w-5" />
                   </button>
+                  <button 
+                                      className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
+                                      onClick={() => setActivePage("Chat")}
+                                    >
+                                      <MessageCircle className="h-5 w-5" />
+                                      {unreadMessages > 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                                      </span>
+                                    )}
+                  </button>
+                  <button 
+                                      className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
+                                      onClick={() => setActivePage("Notifications")}
+                                    >
+                                      <Bell className="h-5 w-5" />
+                                      {unreadNotifications> 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                        {unreadNotifications}
+                                      </span>
+                                    )}
+                </button>
                 </div>
-                
-                {/* Notification icon */}
-                <div className="relative">
-                  <Bell 
-                    className="w-5 h-5 text-white cursor-pointer hover:text-[#3baca5] transition-colors duration-300" 
-                    onClick={() => setActivePage("Notifications")}
-                  />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                    </span>
-                  )}
-                </div>
-                
                 {/* User avatar - Clickable */}
                 <div 
-                  className="h-8 w-8 rounded-full bg-gradient-to-br from-[#23A49B] to-[#2D8A83] flex justify-center items-center text-white font-bold shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  className="h-10 w-10 rounded-full bg-gradient-to-br from-[#23A49B] to-[#2D8A83] flex justify-center items-center text-white font-bold shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => setActivePage("Profile")}
                   role="button"
                   aria-label="View Profile"
@@ -576,7 +585,6 @@ const CEODashboard = () => {
              </div>
             )}
             
-              
                  {/* Employees page */}
                  {activePage === "Employees" && (
               <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">

@@ -208,50 +208,42 @@ exports.verifyResetToken = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
-    const { password, confirmPassword } = req.body;
-    
-    if (!password || !confirmPassword) {
-      return res.status(400).json({ message: 'Both password fields are required' });
-    }
-    
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: 'Passwords do not match' });
-    }
-    
-    // Verify the JWT token
+    const { password } = req.body;
+
+    // Verification of token
     let decodedToken;
     try {
       decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
       return res.status(401).json({ message: 'Token is invalid or expired' });
     }
-    
+
     // Find user
     const user = await User.findById(decodedToken.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     // Hash the new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
+
     // Update user's password
     user.password = hashedPassword;
     await user.save();
-    
+
     // Send confirmation email
     await emailService.sendPasswordResetConfirmation({
       email: user.personalEmail || user.email,
       firstName: user.firstName
     });
-    
+
     res.status(200).json({ message: 'Password has been reset successfully' });
   } catch (error) {
     console.error('Error in resetPassword:', error);
-    res.status(500).json({ 
-      message: 'Error processing your request', 
-      error: error.message 
+    res.status(500).json({
+      message: 'Error processing your request',
+      error: error.message
     });
   }
 };

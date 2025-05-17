@@ -149,7 +149,7 @@ const ManagerDashboard = () => {
           <MessageCircle className="w-5 h-5" />
           {unreadMessages > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              {unreadMessages > 9 ? '9+' : unreadMessages}
+              {unreadMessages}
             </span>
           )}
         </div>
@@ -162,7 +162,9 @@ const ManagerDashboard = () => {
         <div className="relative">
           <Bell className="w-5 h-5" />
           {unreadNotifications > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center" />
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+              {unreadNotifications}
+            </span>
           )}
         </div>
       ),
@@ -334,7 +336,6 @@ const ManagerDashboard = () => {
   };
 
   const handleCancelLogout = () => {
-    console.log("Cancel button clicked, closing modal...");
     setShowLogoutModal(false);
   };
   
@@ -549,7 +550,11 @@ const ManagerDashboard = () => {
                   alt="Enova Robotics"
                 />
               ) : (
-                <FaRobot className="h-8 w-8 text-[#3baca5]" />
+                <img
+                src="/src/assets/CollapsedLogo.png"
+                className="h-12 w-12 z-30  object-contain"
+                alt="Enova Robotics"
+              />
               )}
             </div>
             
@@ -582,7 +587,7 @@ const ManagerDashboard = () => {
                 {user.firstName} {user.lastName}
               </span>
               <span className="text-xs text-gray-400 whitespace-nowrap text-ellipsis overflow-hidden">
-                {user.role || "Admin"}
+                {user.role || "Manager"}
               </span>
             </div>
           </div>
@@ -628,19 +633,28 @@ const ManagerDashboard = () => {
                   >
                     <Activity className="h-5 w-5" />
                   </button>
-                </div>
-                
-                {/* Notification icon */}
-                <div className="relative">
-                  <Bell 
-                    className="w-5 h-5 text-white cursor-pointer hover:text-[#3baca5] transition-colors duration-300" 
-                    onClick={() => setActivePage("Notifications")}
-                  />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                    </span>
-                  )}
+                  <button 
+                                      className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
+                                      onClick={() => setActivePage("Chat")}
+                                    >
+                                      <MessageCircle className="h-5 w-5" />
+                                      {unreadMessages > 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                        {unreadMessages > 9 ? '9+' : unreadMessages}
+                                      </span>
+                                    )}
+                  </button>
+                  <button 
+                                      className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
+                                      onClick={() => setActivePage("Notifications")}
+                                    >
+                                      <Bell className="h-5 w-5" />
+                                      {unreadNotifications> 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                        {unreadNotifications}
+                                      </span>
+                                    )}
+                 </button>
                 </div>
                 
                 {/* User avatar - Clickable */}

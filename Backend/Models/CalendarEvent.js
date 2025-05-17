@@ -54,9 +54,7 @@ const calendarEventSchema = new mongoose.Schema({
   
   // Admin actions tracking
   adminActions: {
-    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     approvedAt: { type: Date },
-    declinedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     declinedAt: { type: Date },
   }
 }, { timestamps: true });

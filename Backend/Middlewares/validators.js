@@ -117,6 +117,22 @@ const updateProfileValidationRules = [
     .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.')
 ];
 
+// Validation rules for password reset
+const resetPasswordValidationRules = [
+  body('password')
+    .notEmpty().withMessage('Password is required.')
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.'),
+  
+  body('confirmPassword')
+    .notEmpty().withMessage('Confirm password is required.')
+    .custom((value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error('Passwords do not match');
+      }
+      return true;
+    })
+];
+
 // Middleware to handle validation errors
 const validate = (req, res, next) => {
   const errors = validationResult(req);

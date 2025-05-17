@@ -6,10 +6,10 @@ const {
   deleteEvent,
   updateAttendeeStatus,
   adminReviewEvent,
-  checkResourceAvailability,
   getResources,
   getResourceById,
-  getUsersInvolved
+  getUsersInvolved,
+  getResourceTypes
 } = require('../Controllers/calendarController.js');
 const authMiddleware = require('../Middlewares/authMiddleware.js');
 const roleMiddleware = require('../Middlewares/roleMiddleware.js');
@@ -32,12 +32,11 @@ router.put('/event/:eventId/attendee/:userId', authMiddleware, updateAttendeeSta
 // Admin review (approve/decline) an event
 router.put('/event/:eventId/admin-review/:adminId/:status', authMiddleware, roleMiddleware(['admin']), adminReviewEvent);
 
-// Check resource availability
-router.get('/resource-availability', authMiddleware, checkResourceAvailability);
-
 router.get('/resources', getResources);
 
 router.get('/resources/:id', getResourceById);
+
+router.get('/types', authMiddleware, getResourceTypes);
 
 router.get('/', getUsersInvolved);
 

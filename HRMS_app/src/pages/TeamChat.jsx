@@ -309,6 +309,7 @@ export default function ChatComponent() {
         // Remove the message from the UI
         setMessages(prev => prev.filter(msg => msg._id !== messageId));
         setShowOptions(null); // Hide options menu
+        fetchConversations();
       } catch (error) {
         console.error('Error deleting message:', error);
         handleApiError(error);
@@ -493,10 +494,15 @@ export default function ChatComponent() {
                           <span className="text-xs text-gray-400">{lastMessageDate}</span>
                         )}
                       </div>
+                      <div className="flex items-center mt-1">
+                    <span className="px-2 py-0.5 bg-gray-700 text-gray-300 text-xs rounded-full inline-flex items-center">
+                      {emp.role || 'Employee'}
+                    </span>
+                  </div>
                       {lastMessage && (
                         <p className="text-xs text-gray-400 truncate">{lastMessage}</p>
                       )}
-                      <p className="text-xs text-gray-400">{emp.role || 'Employee'}</p>
+
                     </div>
                     {unreadCount > 0 && (
                       <div className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold animate-pulse">
@@ -527,7 +533,7 @@ export default function ChatComponent() {
                   </div>
                   <div>
                     <h3 className="font-bold">{selectedUser.firstName} {selectedUser.lastName}</h3>
-                    <p className="text-xs text-gray-400">{selectedUser.role || 'Employee'}</p>
+                    <p className="text-xs text-gray-400">{selectedUser.role}</p>
                   </div>
                 </div>
                 
@@ -546,73 +552,73 @@ export default function ChatComponent() {
                 </button>
               </div>
 
-{/* Messages area */}
-<div className="flex-1 overflow-y-auto mb-4 py-2">
-  {Array.isArray(messages) && messages.length > 0 ? (
-    messages.map((msg, index) => {
-      // Determine if the message is from the selected user or current user
-      const isFromSelectedUser = msg.sender._id === selectedUser._id;
-      
-      return (
-        <div 
-          key={msg._id || index} 
-          className="relative my-3"
-        >
-          <div 
-            className={`p-3 rounded-lg shadow-md relative group ${
-              isFromSelectedUser 
-                ? 'bg-gray-700 mr-auto max-w-[70%] rounded-tl-none' 
-                : 'bg-[#3baca5] ml-auto max-w-[70%] rounded-tr-none'
-            }`}
-          >
-            <p className="text-white break-words pr-6">{msg.message}</p>
-            <span className="text-xs text-gray-300 mt-1 block">
-              {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-            </span>
-            
-            {/* Message options button - positioned inside the bubble */}
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-white p-1 rounded-full 
-                        opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                        hover:bg-black hover:bg-opacity-20"
-              onClick={(e) => toggleMessageOptions(msg._id, e)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
-            
-            {/* Enhanced Message options menu - INSIDE the message bubble */}
-            {showOptions === msg._id && (
-              <div 
-                className="absolute top-8 right-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 w-32 overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-700 text-sm text-red-400 hover:text-red-300 transition-colors duration-150"
-                  onClick={() => deleteMessage(msg._id)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete Message
-                </button>
+              {/* Messages area */}
+              <div className="flex-1 overflow-y-auto mb-4 py-2">
+                {Array.isArray(messages) && messages.length > 0 ? (
+                  messages.map((msg, index) => {
+                    // Determine if the message is from the selected user or current user
+                    const isFromSelectedUser = msg.sender._id === selectedUser._id;
+                    
+                    return (
+                      <div 
+                        key={msg._id || index} 
+                        className="relative my-3"
+                      >
+                        <div 
+                          className={`p-3 rounded-lg shadow-md relative group ${
+                            isFromSelectedUser 
+                              ? 'bg-gray-700 mr-auto max-w-[70%] rounded-tl-none' 
+                              : 'bg-[#3baca5] ml-auto max-w-[70%] rounded-tr-none'
+                          }`}
+                        >
+                          <p className="text-white break-words pr-6">{msg.message}</p>
+                          <span className="text-xs text-gray-300 mt-1 block">
+                            {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                          
+                          {/* Message options button */}
+                          <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-white p-1 rounded-full 
+                                      opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                                      hover:bg-black hover:bg-opacity-20"
+                            onClick={(e) => toggleMessageOptions(msg._id, e)}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                          
+                          {/* Enhanced Message options menu*/}
+                          {showOptions === msg._id && (
+                            <div 
+                              className="absolute top-8 right-2 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 w-32 overflow-hidden"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                className="flex items-center w-full text-left px-4 py-2 hover:bg-gray-700 text-sm text-red-400 hover:text-red-300 transition-colors duration-150"
+                                onClick={() => deleteMessage(msg._id)}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete Message
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center text-gray-500 py-8 flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <p>No messages yet. Start the conversation!</p>
+                  </div>
+                )}
+                <div ref={messageEndRef} />
               </div>
-            )}
-          </div>
-        </div>
-      );
-    })
-  ) : (
-    <div className="text-center text-gray-500 py-8 flex flex-col items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-      </svg>
-      <p>No messages yet. Start the conversation!</p>
-    </div>
-  )}
-  <div ref={messageEndRef} />
-</div>
 
               
               {/* Enhanced Message input */}

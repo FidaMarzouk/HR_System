@@ -42,6 +42,9 @@ const EmployeeDashboardHomePage = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [calendarDays, setCalendarDays] = useState([]);
+  const [departmentLeavesByDay, setDepartmentLeavesByDay] = useState({});
   const [activeSection, setActiveSection] = useState("overview");
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -110,6 +113,71 @@ const EmployeeDashboardHomePage = () => {
     
     fetchDashboardData();
   }, [dateRange]);
+
+  useEffect(() => {
+    // First check if dashboardData exists
+    if (!dashboardData) return;
+    
+    // Process leave data for calendar view when dashboard data changes
+    if (dashboardData.leaveMetrics?.LeaveCalendar) {
+      // Extract leavesByDay from the data - note the correct property name
+      const leavesByDay = dashboardData.leaveMetrics.LeaveCalendar.leavesByDay || {};
+      setDepartmentLeavesByDay(leavesByDay);
+      
+      // Generate calendar days array
+      generateCalendarDays(calendarMonth);
+    }
+  }, [dashboardData, calendarMonth]);
+
+    // Function to generate the days array for the calendar
+    const generateCalendarDays = (date) => {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      // Get the first day of the month
+      const firstDay = new Date(year, month, 1);
+      // Get the last day of the month
+      const lastDay = new Date(year, month + 1, 0);
+      
+      // Get the day of the week for the first day (0 = Sunday, 6 = Saturday)
+      const firstDayOfWeek = firstDay.getDay();
+      
+      // Calculate total number of days to show (including leading/trailing days from adjacent months)
+      const daysInMonth = lastDay.getDate();
+      const totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
+      
+      // Create the array of calendar days
+      const days = [];
+      
+      // Add leading empty cells or days from previous month
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        const prevMonthDate = new Date(year, month, -firstDayOfWeek + i + 1);
+        days.push(prevMonthDate);
+      }
+      
+      // Add days from current month
+      for (let i = 1; i <= daysInMonth; i++) {
+        days.push(new Date(year, month, i));
+      }
+      
+      // Add trailing empty cells or days from next month
+      const remainingCells = totalCells - (firstDayOfWeek + daysInMonth);
+      for (let i = 1; i <= remainingCells; i++) {
+        const nextMonthDate = new Date(year, month + 1, i);
+        days.push(nextMonthDate);
+      }
+      
+      setCalendarDays(days);
+    };
+    
+    // Function to handle month navigation
+    const handleMonthChange = (increment) => {
+      setCalendarMonth(prevDate => {
+        const newDate = new Date(prevDate);
+        newDate.setMonth(newDate.getMonth() + increment);
+        return newDate;
+      });
+    };
 
     // Handle date range changes
     const handleStartDateChange = (newDate) => {
@@ -715,131 +783,158 @@ const CustomTooltip = ({ active, payload, label }) => {
               </div>
             </div>
 
-{/* Leave Requests Status */}
-<div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-  <Typography variant="h5" className="text-white mb-4">Leave Request Status</Typography>
-  <div className="h-64 flex">
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart margin={{ right: 0 }}>
-        <Pie
-          data={Object.entries(dashboardData.leaveMetrics?.leaveRequestStatus?.counts || {}).map(([key, value]) => ({ status: key, count: value }))}
-          cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={100}
-          paddingAngle={2}
-          dataKey="count"
-          nameKey="status"
-          stroke={colors.background}
-          strokeWidth={2}
-        >
-          {Object.entries(dashboardData.leaveMetrics?.leaveRequestStatus?.counts || {}).map(([key, value], index) => {
-            const statusColorMap = {
-              'Pending': 1,
-              'Manager Approved': 0,
-              'Manager Rejected': 2,
-              'Admin Approved': 4,
-              'Admin Rejected': 5
-            };
-            const colorIndex = statusColorMap[key] !== undefined ? statusColorMap[key] : index % colors.chartColors.length;
-            return <Cell key={`cell-${index}`} fill={colors.chartColors[colorIndex]} />;
-          })}
-        </Pie>
-        <Tooltip
-          contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
-          labelStyle={{ color: colors.text }}
-          itemStyle={{ color: colors.text }}
-        />
-        <Legend
-          layout="vertical"
-          verticalAlign="middle"
-          align="right"
-          iconType="circle"
-          wrapperStyle={{
-            paddingLeft: 0,
-            paddingRight: 0,
-            right: -5
-          }}
-          formatter={(value) => <span style={{ color: colors.textSecondary }}>{value}</span>}
-        />
-      </PieChart>
-    </ResponsiveContainer>
-  </div>
-</div>
-
-            {/* Leave Usage By Type */}
+            {/* Leave Requests Status */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography variant="h5" className="text-white mb-4">Leave Usage By Type</Typography>
-              <div className="h-80">
-                {dashboardData.leaveMetrics?.leaveUsageByType?.leaveUsageByType?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={dashboardData.leaveMetrics.leaveUsageByType.leaveUsageByType}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={true}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="days"
-                        nameKey="reason"
-                        label={({ reason, days }) => `${reason}: ${days} days`}
-                      >
-                        {dashboardData.leaveMetrics.leaveUsageByType.leaveUsageByType.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={colors.chartColors[index % colors.chartColors.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
-                        labelStyle={{ color: colors.text }}
-                        formatter={(value, name, props) => [`${value} days`, props.payload.reason]}
-                        itemStyle={{ color: colors.text }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <Typography className="text-gray-400">No leave usage data available</Typography>
-                  </div>
-                )}
+              <Typography variant="h5" className="text-white mb-4">Leave Request Status</Typography>
+              <div className="h-64 flex">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ right: 0 }}>
+                    <Pie
+                      data={Object.entries(dashboardData.leaveMetrics?.leaveRequestStatus?.counts || {}).map(([key, value]) => ({ status: key, count: value }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="count"
+                      nameKey="status"
+                      stroke={colors.background}
+                      strokeWidth={2}
+                    >
+                      {Object.entries(dashboardData.leaveMetrics?.leaveRequestStatus?.counts || {}).map(([key, value], index) => {
+                        const statusColorMap = {
+                          'Pending': 1,
+                          'Manager Approved': 0,
+                          'Manager Rejected': 2,
+                          'Admin Approved': 4,
+                          'Admin Rejected': 5
+                        };
+                        const colorIndex = statusColorMap[key] !== undefined ? statusColorMap[key] : index % colors.chartColors.length;
+                        return <Cell key={`cell-${index}`} fill={colors.chartColors[colorIndex]} />;
+                      })}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
+                      labelStyle={{ color: colors.text }}
+                      itemStyle={{ color: colors.text }}
+                    />
+                    <Legend
+                      layout="vertical"
+                      verticalAlign="middle"
+                      align="right"
+                      iconType="circle"
+                      wrapperStyle={{
+                        paddingLeft: 0,
+                        paddingRight: 0,
+                        right: -5
+                      }}
+                      formatter={(value) => <span style={{ color: colors.textSecondary }}>{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Recent Leave Requests */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography variant="h5" className="text-white mb-4">Recent Leave Requests</Typography>
-              {dashboardData.leaveMetrics?.leaveRequestStatus?.recentLeaveRequests?.length > 0 ? (
-                <div className="overflow-y-auto max-h-80">
-                  {dashboardData.leaveMetrics.leaveRequestStatus.recentLeaveRequests.map((request, index) => (
-                    <div 
-                      key={request.id || index} 
-                      className="border-b border-gray-700 last:border-b-0 py-3 flex justify-between items-center"
+              {/*Leave Calendar */}
+              <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
+            <Typography className="text-white text-lg font-bold mb-4">Leave Calendar</Typography>
+            
+            <div className="mb-4">
+                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex items-center">
+                    <span className="inline-block w-3 h-3 bg-[#0bbfb3] rounded-full mr-2"></span>
+                    <span className="text-gray-400 text-sm">CEO Approved</span>
+                </div>
+                <div className="flex items-center">
+                    <span className="inline-block w-3 h-3 bg-[#4682B4] rounded-full mr-2"></span>
+                    <span className="text-gray-400 text-sm">Admin Approved</span>
+                </div>
+                </div>
+            </div>
+            
+                <div className="overflow-x-auto">
+                {/* Calendar Header - Month and Navigation */}
+                <div className="flex justify-between items-center mb-4">
+                    <button 
+                    className="p-2 rounded hover:bg-gray-700 text-gray-300"
+                    onClick={() => handleMonthChange(-1)}
                     >
-                      <div>
-                        <Typography className="text-white">{new Date(request.startDate).toLocaleDateString()} to {new Date(request.endDate).toLocaleDateString()}</Typography>
-                        <Typography className="text-gray-400 text-sm">{request.reason}</Typography>
-                      </div>
-                      <div>
-                        <span 
-                          className={`px-3 py-1 rounded-full text-xs ${
-                            request.status.includes('Approved') 
-                              ? 'bg-green-900/50 text-green-400' 
-                              : request.status.includes('Rejected')
-                                ? 'bg-red-900/50 text-red-400'
-                                : 'bg-blue-900/50 text-blue-400'
-                          }`}
-                        >
-                          {request.status}
-                        </span>
-                      </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    </button>
+                    <div className="text-white font-medium text-lg">
+                    {new Date(calendarMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </div>
-                  ))}
+                    <button 
+                    className="p-2 rounded hover:bg-gray-700 text-gray-300"
+                    onClick={() => handleMonthChange(1)}
+                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                    </button>
                 </div>
-              ) : (
-                <div className="h-40 flex items-center justify-center">
-                  <Typography className="text-gray-400">No recent leave requests</Typography>
+                
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-2">
+                    {/* Days of week header */}
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center text-gray-400 font-medium pb-2">
+                        {day}
+                    </div>
+                    ))}
+                    
+                    {/* Calendar cells */}
+                    {calendarDays.map((day, index) => {
+                    const dateStr = day ? day.toISOString().split('T')[0] : '';
+                    const dayLeaves = day ? departmentLeavesByDay[dateStr] || [] : [];
+                    const isWeekend = day && (day.getDay() === 0 || day.getDay() === 6);
+                    const isCurrentMonth = day && day.getMonth() === new Date(calendarMonth).getMonth();
+                    
+                    return (
+                        <div 
+                        key={index} 
+                        className={`
+                            min-h-24 border border-gray-700/30 rounded p-1
+                            ${!day ? 'bg-transparent' : ''}
+                            ${isWeekend ? 'bg-gray-800/30' : 'bg-gray-800/10'}
+                            ${!isCurrentMonth ? 'opacity-40' : ''}
+                        `}
+                        >
+                        {day && (
+                            <>
+                            <div className="text-right text-sm text-gray-400 mb-1">
+                                {day.getDate()}
+                            </div>
+                            <div className="overflow-y-auto max-h-20">
+                                {dayLeaves.map(leave => {
+                                let bgColor = "bg-[#0bbfb3]/20 border-[#0bbfb3]/40 text-[#0bbfb3]";
+                                if (leave.status === "Admin Approved") {
+                                    bgColor = "bg-[#4682B4]/20 border-[#4682B4]/40 text-[#4682B4]";
+                                } else if (leave.status === "CEO Approved") {
+                                    bgColor = "bg-[#E17372]/20 border-[#E17372]/40 text-[#E17372]";
+                                }
+                                
+                                return (
+                                    <div 
+                                    key={`${leave.id}-${dateStr}`}
+                                    className={`text-xs rounded px-1 py-0.5 mb-1 truncate border ${bgColor}`}
+                                    title={`${leave.employee}: ${leave.reason}`}
+                                    >
+                                    {leave.employee}
+                                    </div>
+                                );
+                                })}
+                            </div>
+                            </>
+                        )}
+                        </div>
+                    );
+                    })}
                 </div>
-              )}
+
+                </div>
             </div>
           </div>
         )}
@@ -847,63 +942,6 @@ const CustomTooltip = ({ active, payload, label }) => {
         {/* Calendar Section */}
         {activeSection === "calendar" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Upcoming Events Counter */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography variant="h5" className="text-white mb-4">Upcoming Events</Typography>
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <Typography variant="h4" className="text-[#0bbfb3]">
-                    {dashboardData.calendarMetrics?.upcomingEventsCounter?.today?.total || 0}
-                  </Typography>
-                  <Typography className="text-gray-400">Today</Typography>
-                </div>
-                <div className="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <Typography variant="h4" className="text-[#0bbfb3]">
-                    {dashboardData.calendarMetrics?.upcomingEventsCounter?.thisWeek?.total || 0}
-                  </Typography>
-                  <Typography className="text-gray-400">This Week</Typography>
-                </div>
-                <div className="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <Typography variant="h4" className="text-[#0bbfb3]">
-                    {dashboardData.calendarMetrics?.upcomingEventsCounter?.thisMonth?.total || 0}
-                  </Typography>
-                  <Typography className="text-gray-400">This Month</Typography>
-                </div>
-              </div>
-              <div>
-                <Typography className="text-white mb-3">Events by Type</Typography>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-[#0bbfb3] rounded-full mr-2"></div>
-                      <Typography className="text-gray-300">Meetings</Typography>
-                    </div>
-                    <Typography className="text-white">{dashboardData.calendarMetrics?.upcomingEventsCounter?.thisWeek?.meeting || 0}</Typography>
-                  </div>
-                  <div className="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-[#E17372] rounded-full mr-2"></div>
-                      <Typography className="text-gray-300">Missions</Typography>
-                    </div>
-                    <Typography className="text-white">{dashboardData.calendarMetrics?.upcomingEventsCounter?.thisWeek?.mission || 0}</Typography>
-                  </div>
-                  <div className="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-[#6E62B6] rounded-full mr-2"></div>
-                      <Typography className="text-gray-300">Reservations</Typography>
-                    </div>
-                    <Typography className="text-white">{dashboardData.calendarMetrics?.upcomingEventsCounter?.thisWeek?.resourceReservation || 0}</Typography>
-                  </div>
-                  <div className="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-[#F0B94D] rounded-full mr-2"></div>
-                      <Typography className="text-gray-300">Other</Typography>
-                    </div>
-                    <Typography className="text-white">{dashboardData.calendarMetrics?.upcomingEventsCounter?.thisWeek?.other || 0}</Typography>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Calendar Density */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">

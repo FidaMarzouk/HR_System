@@ -120,9 +120,9 @@ const ManagerDashboardHomePage = () => {
     if (!dashboardData) return;
     
     // Process leave data for calendar view when dashboard data changes
-    if (dashboardData.leaveManagementMetrics?.departmentLeaveCalendar) {
+    if (dashboardData.leaveManagementMetrics?.LeaveCalendar) {
       // Extract leavesByDay from the data - note the correct property name
-      const leavesByDay = dashboardData.leaveManagementMetrics.departmentLeaveCalendar.leavesByDay || {};
+      const leavesByDay = dashboardData.leaveManagementMetrics.LeaveCalendar.leavesByDay || {};
       setDepartmentLeavesByDay(leavesByDay);
       
       // Generate calendar days array
@@ -603,8 +603,6 @@ const ManagerDashboardHomePage = () => {
                 </div>
               </div>
             </div>
-
-
         </div>
         )}
 
@@ -721,7 +719,7 @@ const ManagerDashboardHomePage = () => {
 
         {/* Leave Management Section */}
         {activeSection === "leave" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Pending Requests */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <div className="flex justify-between items-start mb-4">
@@ -754,124 +752,24 @@ const ManagerDashboardHomePage = () => {
               </Typography>
             </div>
 
-            {/* Total Requests */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <Typography className="text-gray-400">Total Requests</Typography>
-                  <Typography variant="h3" className="text-white text-2xl font-bold mt-1">
-                    {dashboardData.leaveManagementMetrics?.leaveApprovalRate?.totalRequests || 0}
-                  </Typography>
-                </div>
-                <Calendar className="text-[#23A49B] w-8 h-8" />
-              </div>
-              <Typography className="text-gray-400 text-sm">
-                In selected period
-              </Typography>
-            </div>
-
-            {/* Leave Types */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <Typography className="text-gray-400">Main Leave Type</Typography>
-                  <Typography variant="h3" className="text-white text-2xl font-bold mt-1">
-                    {dashboardData.leaveManagementMetrics?.leaveDistribution?.[0]?.type || "N/A"}
-                  </Typography>
-                </div>
-                <FileCheck className="text-[#23A49B] w-8 h-8" />
-              </div>
-              <Typography className="text-gray-400 text-sm">
-                {dashboardData.leaveManagementMetrics?.leaveDistribution?.[0]?.days || 0} days total
-              </Typography>
-            </div>
-
-            {/* Leave Distribution Chart */}
-            <div className="col-span-1 md:col-span-2 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography className="text-white text-lg font-bold mb-4">Leave Distribution by Type</Typography>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={dashboardData.leaveManagementMetrics?.leaveDistribution || []}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="days"
-                      nameKey="type"
-                      label={({ type, days }) => `${type}: ${days}`}
-                    >
-                      {(dashboardData.leaveManagementMetrics?.leaveDistribution || []).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={colors.chartColors[index % colors.chartColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            {/* Leave Summary */}
-            <div className="col-span-1 md:col-span-2 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-            <div className="flex justify-between items-center mb-6">
-                <Typography className="text-white text-lg font-bold">Summary</Typography>
-            </div>
-            
-            <div className="flex flex-col gap-6">
-                {/* Approval Rate Section */}
-                <div className="flex flex-col">
-                <Typography className="text-gray-400 mb-3">Approval Rate</Typography>
-                <div className="flex items-center mb-2">
-                    <div className="w-full bg-gray-700 rounded-full h-3 mr-2">
-                    <div
-                        className="bg-[#23A49B] h-3 rounded-full"
-                        style={{ width: `${dashboardData.leaveManagementMetrics?.leaveApprovalRate?.approvalRate || 0}%` }}
-                    ></div>
-                    </div>
-                    <span className="text-white ml-2">{(dashboardData.leaveManagementMetrics?.leaveApprovalRate?.approvalRate || 0).toFixed(1)}%</span>
-                </div>
-                <Typography className="text-gray-400 text-sm">
-                    Team average
-                </Typography>
-                </div>
-                
-                {/* Total Leave Days Section */}
-                <div className="flex flex-col mt-2">
-                <Typography className="text-gray-400 mb-3">Total Leave Days</Typography>
-                <Typography className="text-white text-2xl font-bold mb-2">
-                    {dashboardData.leaveManagementMetrics?.leaveDistribution?.reduce((acc, curr) => acc + curr.days, 0) || 0}
-                </Typography>
-                <Typography className="text-gray-400 text-sm">
-                    In selected period
-                </Typography>
-                </div>
-            </div>
-            </div>
-
-            {/* Department Leave Calendar */}
+            {/*Leave Calendar */}
             <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-            <Typography className="text-white text-lg font-bold mb-4">Department Leave Calendar</Typography>
+            <Typography className="text-white text-lg font-bold mb-4">Leave Calendar</Typography>
             
             <div className="mb-4">
                 <div className="flex flex-wrap gap-2 mb-4">
                 <div className="flex items-center">
                     <span className="inline-block w-3 h-3 bg-[#0bbfb3] rounded-full mr-2"></span>
-                    <span className="text-gray-400 text-sm">Manager Approved</span>
+                    <span className="text-gray-400 text-sm">CEO Approved</span>
                 </div>
                 <div className="flex items-center">
                     <span className="inline-block w-3 h-3 bg-[#4682B4] rounded-full mr-2"></span>
                     <span className="text-gray-400 text-sm">Admin Approved</span>
                 </div>
-                <div className="flex items-center">
-                    <span className="inline-block w-3 h-3 bg-[#E17372] rounded-full mr-2"></span>
-                    <span className="text-gray-400 text-sm">CEO Approved</span>
-                </div>
                 </div>
             </div>
             
-            {dashboardData?.leaveManagementMetrics?.departmentLeaveCalendar?.leavesList?.length > 0 ? (
+            {dashboardData?.leaveManagementMetrics?.LeaveCalendar?.leavesList?.length > 0 ? (
                 <div className="overflow-x-auto">
                 {/* Calendar Header - Month and Navigation */}
                 <div className="flex justify-between items-center mb-4">
@@ -958,7 +856,7 @@ const ManagerDashboardHomePage = () => {
                 <div className="mt-6">
                 <Typography className="text-white text-sm font-semibold mb-2">Approved Leaves This Month</Typography>
                 <div className="overflow-y-auto max-h-40">
-                    {dashboardData.leaveManagementMetrics?.departmentLeaveCalendar?.leavesList.map((leave) => {
+                    {dashboardData.leaveManagementMetrics?.LeaveCalendar?.leavesList.map((leave) => {
                     let statusColor = "text-[#0bbfb3]";
                     if (leave.status === "Admin Approved") statusColor = "text-[#4682B4]";
                     else if (leave.status === "CEO Approved") statusColor = "text-[#E17372]";
@@ -985,90 +883,12 @@ const ManagerDashboardHomePage = () => {
                     </div>
                 )}
             </div>
-
-            {/* Leave Statistics */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-            <Typography className="text-white text-lg font-bold mb-4">Leave Approval Statistics</Typography>
-            <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                    data={[
-                    {
-                        name: "Approved",
-                        value: dashboardData.leaveManagementMetrics?.leaveApprovalRate?.approvedRequests || 0,
-                        fill: "#0bbfb3"
-                    },
-                    {
-                        name: "Rejected",
-                        value: dashboardData.leaveManagementMetrics?.leaveApprovalRate?.rejectedRequests || 0,
-                        fill: "#E17372"
-                    },
-                    {
-                        name: "Pending",
-                        value: dashboardData.leaveManagementMetrics?.leaveApprovalRate?.pendingRequests || 0,
-                        fill: "#4682B4"
-                    }
-                    ]}
-                >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="name" stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Requests" radius={[4, 4, 0, 0]}>
-                    {[0, 1, 2].map((entry, index) => (
-                        <Cell 
-                        key={`cell-${index}`} 
-                        fill={
-                            index === 0 ? "#0bbfb3" : 
-                            index === 1 ? "#E17372" : "#4682B4"
-                        } 
-                        />
-                    ))}
-                    </Bar>
-                </BarChart>
-                </ResponsiveContainer>
-            </div>
-            </div>
-
-            {/* Monthly Leave Distribution */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-            <Typography className="text-white text-lg font-bold mb-4">Top Leave Types</Typography>
-            <div className="overflow-y-auto h-72">
-                <table className="w-full table-auto">
-                <thead>
-                    <tr className="text-left border-b border-gray-700">
-                    <th className="pb-3 text-gray-400">Type</th>
-                    <th className="pb-3 text-gray-400">Days</th>
-                    <th className="pb-3 text-gray-400">Count</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {dashboardData.leaveManagementMetrics?.leaveDistribution?.map((item, index) => (
-                    <tr key={index} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                        <td className="py-3 text-white">{item.type}</td>
-                        <td className="py-3 text-white">{item.days}</td>
-                        <td className="py-3 text-white">{item.count}</td>
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
-                
-                {(!dashboardData.leaveManagementMetrics?.leaveDistribution || 
-                dashboardData.leaveManagementMetrics?.leaveDistribution.length === 0) && (
-                <div className="text-center py-8">
-                    <Typography className="text-gray-400">No leave data available</Typography>
-                </div>
-                )}
-            </div>
-            </div>
-
-
           </div>
         )}
 
         {/* Calendar Section */}
         {activeSection === "calendar" && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Upcoming Events */}
             <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
             <div className="flex justify-between items-center mb-4">
@@ -1119,101 +939,42 @@ const ManagerDashboardHomePage = () => {
             </div>
             </div>
 
-{/* Event Participation Rate */}
-<div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-  <Typography className="text-white text-lg font-bold mb-4">Event Participation</Typography>
-  
-  {/* Overall Participation Rate Bar */}
-  <div className="flex items-center mb-6">
-    <div className="w-full bg-gray-700 rounded-full h-3 mr-2">
-      <div
-        className="bg-[#23A49B] h-3 rounded-full"
-        style={{ width: `${dashboardData.calendarMetrics?.eventParticipationRates?.overallParticipationRate || 0}%` }}
-      ></div>
-    </div>
-    <span className="text-white ml-2">{dashboardData.calendarMetrics?.eventParticipationRates?.overallParticipationRate || 0}%</span>
-  </div>
-  <Typography className="text-gray-400 text-sm mb-4">
-    Overall participation rate
-  </Typography>
-  
-  {/* Event Type Stats */}
-  <div className="grid grid-cols-2 gap-4 mb-6">
-    {Object.entries(dashboardData.calendarMetrics?.eventParticipationRates?.eventTypes || {}).map(([type, stats], index) => (
-      <div key={index} className="bg-gray-700/50 rounded-lg p-3">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-300 capitalize">{type}</span>
-          <span className="text-white font-medium">{stats.participationRate.toFixed(1)}%</span>
-        </div>
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>Accepted: {stats.accepted}</span>
-          <span>Total: {stats.total}</span>
-        </div>
-      </div>
-    ))}
-  </div>
-  </div>
-  
-  {/* Weekly Trend Chart */}
-{/* Event Participation Rate */}
-<div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-  <Typography className="text-white text-lg font-bold mb-4">Weekly Participation Trend</Typography>
-    <div className="w-full h-64 bg-gray-700/30 rounded-lg p-4">
-      {dashboardData.calendarMetrics?.eventParticipationRates?.trendByWeek?.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={dashboardData.calendarMetrics.eventParticipationRates.trendByWeek}
-            margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-            <XAxis 
-              dataKey="week" 
-              stroke="#888" 
-              tick={{ fill: '#888', fontSize: 10 }}
-              tickFormatter={(value) => value.split('-W')[1]} // Just show week number
-            />
-            <YAxis 
-              stroke="#888" 
-              tick={{ fill: '#888', fontSize: 10 }}
-              domain={[0, 100]}
-              tickFormatter={(value) => `${value}%`}
-            />
-            <Tooltip 
-              contentStyle={{ backgroundColor: '#333', border: '1px solid #555' }}
-              labelStyle={{ color: '#fff' }}
-              formatter={(value) => [`${value}%`, 'Participation Rate']}
-              labelFormatter={(value) => `Week ${value.split('-W')[1]}`}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="participationRate" 
-              stroke="#23A49B" 
-              strokeWidth={2}
-              dot={{ r: 4, fill: '#23A49B' }}
-              activeDot={{ r: 6, fill: '#34D5CB' }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="h-full flex items-center justify-center text-gray-400">
-          No trend data available
-        </div>
-      )}
-    </div>
-    
-    {/* Legend */}
-    <div className="flex justify-end items-center mt-2">
-      <div className="flex items-center">
-        <div className="w-3 h-3 rounded-full bg-[#23A49B] mr-1"></div>
-        <span className="text-xs text-gray-400">Participation Rate</span>
-      </div>
-    </div>
-  </div>
-
-
+          {/* Event Participation Rate */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
+            <Typography className="text-white text-lg font-bold mb-4">Event Participation</Typography>
+            
+            {/* Overall Participation Rate Bar */}
+            <div className="flex items-center mb-6">
+              <div className="w-full bg-gray-700 rounded-full h-3 mr-2">
+                <div
+                  className="bg-[#23A49B] h-3 rounded-full"
+                  style={{ width: `${dashboardData.calendarMetrics?.eventParticipationRates?.overallParticipationRate || 0}%` }}
+                ></div>
+              </div>
+              <span className="text-white ml-2">{dashboardData.calendarMetrics?.eventParticipationRates?.overallParticipationRate || 0}%</span>
+            </div>
+            <Typography className="text-gray-400 text-sm mb-4">
+              Overall participation rate
+            </Typography>
+            
+            {/* Event Type Stats */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {Object.entries(dashboardData.calendarMetrics?.eventParticipationRates?.eventTypes || {}).map(([type, stats], index) => (
+                <div key={index} className="bg-gray-700/50 rounded-lg p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-300 capitalize">{type}</span>
+                    <span className="text-white font-medium">{stats.participationRate.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Accepted: {stats.accepted}</span>
+                    <span>Total: {stats.total}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </div>
         </div>
         )}
-
         {/* Team Productivity Section */}
         {activeSection === "productivity" && (
         <div className="space-y-6">
@@ -1428,102 +1189,6 @@ const ManagerDashboardHomePage = () => {
               </div>
             </div>
 
-            {/* Response Time Distribution Chart */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography className="text-white text-lg font-bold mb-4">Response Time Distribution</Typography>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { 
-                        name: 'Under 5 min', 
-                        percentage: Number(dashboardData.communicationMetrics?.responseTime?.responseTimeDistribution?.under5Minutes?.percentage || 0)
-                      },
-                      { 
-                        name: 'Under 15 min', 
-                        percentage: Number(dashboardData.communicationMetrics?.responseTime?.responseTimeDistribution?.under15Minutes?.percentage || 0)
-                      },
-                      { 
-                        name: 'Under 60 min', 
-                        percentage: Number(dashboardData.communicationMetrics?.responseTime?.responseTimeDistribution?.under60Minutes?.percentage || 0)
-                      },
-                      { 
-                        name: 'Over 60 min', 
-                        percentage: Number(dashboardData.communicationMetrics?.responseTime?.responseTimeDistribution?.over60Minutes?.percentage || 0)
-                      }
-                    ]}
-                    margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false} 
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      domain={[0, 100]}
-                      unit="%"
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar 
-                      dataKey="percentage" 
-                      name="Response Percentage" 
-                      fill={colors.chartColors[0]} 
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-              {/* Team Engagement Chart */}
-              <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-                <Typography className="text-white text-lg font-bold mb-4">Daily Message Activity</Typography>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={Array.isArray(dashboardData.communicationMetrics?.dailyMessages) ? 
-                        dashboardData.communicationMetrics?.dailyMessages : 
-                        [{ date: 'N/A', count: 0 }]
-                      }
-                      margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis 
-                        dataKey="date" 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      />
-                      <YAxis 
-                        axisLine={false}
-                        tickLine={false} 
-                        tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        name="Messages" 
-                        stroke={colors.chartColors[0]} 
-                        fill={`url(#colorCount)`} 
-                      />
-                      <defs>
-                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={colors.chartColors[0]} stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor={colors.chartColors[0]} stopOpacity={0.1}/>
-                        </linearGradient>
-                      </defs>
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-  
             {/* Most Active Users Table */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <div className="flex justify-between items-center mb-4">

@@ -193,7 +193,7 @@ exports.deleteConversation = async (req, res) => {
   }
 };
 
-// Optimized getConversations function with proper error handling
+
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -206,10 +206,13 @@ exports.getConversations = async (req, res) => {
       {
         $match: {
           $or: [
-            { sender: userObjectId },
-            { receiver: userObjectId }
+            { sender: userObjectId, deletedForSender: false },
+            { receiver: userObjectId, deletedForReceiver: false }
           ]
         }
+      },
+      {
+        $sort: { createdAt: 1 }
       },
       // Determine the conversation partner for each message
       {
@@ -249,28 +252,11 @@ exports.getConversations = async (req, res) => {
       {
         $sort: { lastMessageDate: -1 }
       },
-      // Lookup partner user details
-      {
-        $lookup: {
-          from: "users", // This should match your User collection name
-          localField: "_id",
-          foreignField: "_id",
-          as: "userDetails"
-        }
-      },
-      // Unwind the userDetails array to get a single object
-      {
-        $unwind: "$userDetails"
-      },
       // Shape the final output
       {
         $project: {
           _id: 1,
           userId: "$_id",
-          firstName: "$userDetails.firstName",
-          lastName: "$userDetails.lastName",
-          picture: "$userDetails.picture",
-          role: "$userDetails.role",
           lastMessage: 1,
           lastMessageDate: 1,
           unreadCount: 1,

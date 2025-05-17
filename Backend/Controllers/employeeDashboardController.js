@@ -53,7 +53,7 @@ exports.getEmployeeDashboardData = async (req, res) => {
 
      const leaveBalanceIndicator = await getLeaveBalanceIndicator(userId);
      const leaveRequestStatus = await getLeaveRequestStatus(userId);
-     const leaveUsageByType = await getLeaveUsageByType(userId);
+     const LeaveCalendar = await getLeaveCalendar(startDate, endDate);
     
      const upcomingEventsCounter = await getUpcomingEventsCounter(userId, startDate, endDate);
      const calendarDensity = await getCalendarDensity(userId, startDate, endDate);
@@ -77,7 +77,7 @@ exports.getEmployeeDashboardData = async (req, res) => {
         leaveMetrics: {
           leaveBalanceIndicator,
           leaveRequestStatus,
-          leaveUsageByType
+          LeaveCalendar
         },
         calendarMetrics: {
           upcomingEventsCounter,
@@ -529,74 +529,54 @@ async function getLeaveRequestStatus(userId) {
     }
   });
   
-  // Get most recent leave requests
-  const recentLeaveRequests = await LeaveRequest.find({ employeeId: userId })
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .populate('managerId', 'firstName lastName')
-    .populate('adminId', 'firstName lastName')
-    .select('startDate endDate reason status createdAt managerId adminId');
-  
   return {
     counts,
-    recentLeaveRequests: recentLeaveRequests.map(request => ({
-      id: request._id,
-      startDate: request.startDate,
-      endDate: request.endDate,
-      reason: request.reason,
-      status: request.status,
-      createdAt: request.createdAt,
-      createdBy: request.createdBy,
-      manager: request.managerId ? `${request.managerId.firstName} ${request.managerId.lastName}` : null,
-      admin: request.adminId ? `${request.adminId.firstName} ${request.adminId.lastName}` : null
-    }))
   };
 }
-
-async function getLeaveUsageByType(userId) {
-  // Get all approved leave requests for the user (considering multiple approval states)
-  const leaveRequests = await LeaveRequest.find({ 
-    employeeId: userId, 
-    status: { $in: ['Manager Approved', 'Admin Approved'] }
-  });
+async function getLeaveCalendar(startDate, endDate) {
+  // Find ALL approved leaves in the date range for the calendar view
+  const allLeaves = await LeaveRequest.find({
+    status: { $in: ['Admin Approved', 'CEO Approved'] },
+    startDate: { $lte: endDate },
+    endDate: { $gte: startDate }
+  }).populate('employeeId', 'firstName lastName');
   
-  // Count leaves by type (reason)
-  const leaveTypeCount = {};
-  const leaveTypeDays = {};
+  // Format ALL leaves for calendar display (all employees, not just from this department)
+  const leavesByDay = {};
   
-  leaveRequests.forEach(request => {
-    const reason = request.reason || 'Other';
+  // For each leave, create entries for each day the leave spans
+  allLeaves.forEach(leave => {
+    const currentDate = new Date(leave.startDate);
+    const lastDate = new Date(leave.endDate);
+    // Add one day to last date to include it in the range
+    lastDate.setDate(lastDate.getDate() + 1);
     
-    // Count occurrences
-    if (!leaveTypeCount[reason]) {
-      leaveTypeCount[reason] = 0;
+    while (currentDate < lastDate) {
+      const dateKey = currentDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      
+      if (!leavesByDay[dateKey]) {
+        leavesByDay[dateKey] = [];
+      }
+      
+      leavesByDay[dateKey].push({
+        id: leave._id,
+        employee: `${leave.employeeId.firstName} ${leave.employeeId.lastName}`,
+        reason: leave.reason,
+        status: leave.status
+      });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
-    leaveTypeCount[reason]++;
-    
-    // Count days
-    if (!leaveTypeDays[reason]) {
-      leaveTypeDays[reason] = 0;
-    }
-    
-    // Calculate days difference (inclusive of start and end date)
-    const startDate = new Date(request.startDate);
-    const endDate = new Date(request.endDate);
-    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    
-    leaveTypeDays[reason] += days;
   });
-  
-  // Convert to array format for charts
-  const leaveUsageByType = Object.keys(leaveTypeCount).map(reason => ({
-    reason,
-    count: leaveTypeCount[reason],
-    days: leaveTypeDays[reason]
-  }));
   
   return {
-    leaveUsageByType,
-    totalLeavesTaken: leaveRequests.length,
-    totalDaysTaken: Object.values(leaveTypeDays).reduce((sum, days) => sum + days, 0)
+    leavesByDay, // ALL employees for the calendar view
+    // Include the date range for the frontend
+    calendarRange: {
+      startDate,
+      endDate
+    }
   };
 }
 
@@ -613,12 +593,7 @@ async function getUpcomingEventsCounter(userId, startDate, endDate) {
   // Convert userId to MongoDB ObjectId properly
   const userObjectId = new mongoose.Types.ObjectId(userId);
   
-  // Count upcoming events by type from the given start date
-  const upcomingEventsToday = await countEventsByType(userObjectId, startDate, getEndOfDay(startDate));
-  const upcomingEventsThisWeek = await countEventsByType(userObjectId, startDate, nextWeek);
-  const upcomingEventsThisMonth = await countEventsByType(userObjectId, startDate, nextMonth);
-  
-  // Get next 5 upcoming events from the given start date
+  // Get next upcoming events from the given start date
   const nextEvents = await CalendarEvent.find({
     $or: [
       { 'usersInvolved.userId': userObjectId },
@@ -628,7 +603,6 @@ async function getUpcomingEventsCounter(userId, startDate, endDate) {
     status: { $ne: 'declined' }
   })
   .sort({ startDateTime: 1 })
-  .limit(5)
   .select('title eventType startDateTime endDateTime location');
   
   // Format nextEvents to match frontend expectations
@@ -642,9 +616,6 @@ async function getUpcomingEventsCounter(userId, startDate, endDate) {
   }));
   
   return {
-    today: upcomingEventsToday,
-    thisWeek: upcomingEventsThisWeek,
-    thisMonth: upcomingEventsThisMonth,
     nextEvents: formattedNextEvents
   };
 }

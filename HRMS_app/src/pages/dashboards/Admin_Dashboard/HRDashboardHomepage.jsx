@@ -817,19 +817,7 @@ const HRDashboardHomepage = () => {
         {activeSection === "communication" && dashboardData && (
           <div className="space-y-6">
             {/* Key Statistics Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Total Messages Card */}
-              <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 flex items-center">
-                <div className="w-14 h-14 rounded-lg bg-[#23A49B]/20 flex items-center justify-center mr-4">
-                  <MessageCircle className="w-7 h-7 text-[#23A49B]" />
-                </div>
-                <div>
-                  <Typography className="text-gray-400 text-sm">Total Messages</Typography>
-                  <Typography variant="h4" className="text-white font-bold">
-                    {dashboardData.communicationAnalytics.messagesByDepartment.reduce((sum, dept) => sum + dept.messageCount, 0)}
-                  </Typography>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               
               {/* Average Response Time Card */}
               <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 flex items-center">
@@ -841,22 +829,6 @@ const HRDashboardHomepage = () => {
                   <Typography variant="h4" className="text-white font-bold">
                     {dashboardData.communicationAnalytics.averageResponseTime?.averageResponseTime || 0}
                     <Typography as="span" className="text-sm text-gray-400 ml-1">min</Typography>
-                  </Typography>
-                </div>
-              </div>
-              
-              {/* Notification Read Rate Card */}
-              <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 flex items-center">
-                <div className="w-14 h-14 rounded-lg bg-[#23A49B]/20 flex items-center justify-center mr-4">
-                  <Bell className="w-7 h-7 text-[#23A49B]" />
-                </div>
-                <div>
-                  <Typography className="text-gray-400 text-sm">Avg. Notification Read Rate</Typography>
-                  <Typography variant="h4" className="text-white font-bold">
-                    {Math.round(dashboardData.communicationAnalytics.notificationRatesByType.reduce(
-                      (sum, type) => sum + type.readRate, 0) / 
-                      dashboardData.communicationAnalytics.notificationRatesByType.length
-                    )}%
                   </Typography>
                 </div>
               </div>
@@ -930,68 +902,6 @@ const HRDashboardHomepage = () => {
                       />
                     </LineChart>
                   </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-            
-            {/* Second Row of Visualizations */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Response Time Distribution Chart */}
-              <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Typography variant="h5" className="text-white">Response Time Distribution</Typography>
-                  <div className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded-full">
-                    {dashboardData.communicationAnalytics.averageResponseTime?.responseCount || 0} Responses
-                  </div>
-                </div>
-                
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData.communicationAnalytics.averageResponseTime?.responseTimeDistribution || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis 
-                        dataKey="range" 
-                        tick={{ fill: colors.textSecondary }}
-                      />
-                      <YAxis tick={{ fill: colors.textSecondary }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
-                        labelStyle={{ color: colors.text }}
-                        formatter={(value, name) => [value, 'Responses']}
-                      />
-                      <Bar dataKey="count" fill={colors.primary} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              
-              {/* Notification Read Rates */}
-              <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <Typography variant="h5" className="text-white">Notification Read Rates</Typography>
-                </div>
-                <div className="space-y-4 mt-4">
-                  {dashboardData.communicationAnalytics.notificationRatesByType.map((notif, index) => (
-                    <div key={`notif-${index}`} className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <Typography className="text-gray-300 text-sm">{notif.notificationType}</Typography>
-                        <Typography className="text-white text-sm font-medium">{Math.round(notif.readRate)}%</Typography>
-                      </div>
-                      <div className="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${notif.readRate}%`,
-                            backgroundColor: notif.readRate > 70 ? colors.chartColors[0] : notif.readRate > 40 ? colors.chartColors[6] : colors.chartColors[2]
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>{notif.read} read</span>
-                        <span>{notif.total} total</span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>

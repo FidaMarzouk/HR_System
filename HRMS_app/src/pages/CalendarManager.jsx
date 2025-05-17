@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Clock, Plus, Filter, List, Grid as GridIcon, ChevronLeft, ChevronRight, CheckCircle, XCircle, AlertTriangle, Users, MapPin, Briefcase, Wrench, Monitor, Home, MoreVertical, User } from "lucide-react";
+import { Calendar, Clock, Plus, Filter, List, GridIcon, ChevronLeft, ChevronRight, CheckCircle, XCircle, AlertTriangle, Users, MapPin, Briefcase, Wrench, Monitor, Home, MoreVertical, User } from "lucide-react";
 import axios from "axios";
 import { format, parseISO, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addDays} from "date-fns";
 import Swal from "sweetalert2";
@@ -51,6 +51,7 @@ const eventTypeColors = {
 
 const CalendarManager = () => {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null); 
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -62,25 +63,21 @@ const CalendarManager = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
   const [resourcesList, setResourcesList] = useState([]);
+  const [resourceTypes, setResourceTypes] = useState([]);
   const [loadingResources, setLoadingResources] = useState(false);
+  const [loadingResourceTypes, setLoadingResourceTypes] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [usersList, setUsersList] = useState([]);
-  const [isResourceAvailable, setIsResourceAvailable] = useState(true);
-  const [resourceConflictMessage, setResourceConflictMessage] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
-const [conflictingEvents, setConflictingEvents] = useState([]);
-const [reservationTimeline, setReservationTimeline] = useState([]);
-const [availableResourcesCount, setAvailableResourcesCount] = useState(0);
-const [resourceMaintenanceStatus, setResourceMaintenanceStatus] = useState(false);
-
+  const [availableResourcesCount, setAvailableResourcesCount] = useState(0);
+  const API_BASE_URL = "http://localhost:8080/api/calendar";
   const [filters, setFilters] = useState({
     eventType: [],
     status: [],
     department: []
   });
 
-  const API_BASE_URL = "http://localhost:8080/api/calendar";
   useEffect(() => {
     const getCurrentUser = async () => {
       try {
@@ -103,7 +100,6 @@ const [resourceMaintenanceStatus, setResourceMaintenanceStatus] = useState(false
     fetchDepartments();
     fetchUsers();
   }, [currentDate, viewMode]);
-  const userRole = user?.role;
 
   // Event form state
   const [eventForm, setEventForm] = useState({
@@ -119,93 +115,61 @@ const [resourceMaintenanceStatus, setResourceMaintenanceStatus] = useState(false
     resourceId: "",
     usersInvolved: []
   });
-  
-  useEffect(() => {
-    const checkResourceAvailability = async () => {
-      if (
-        eventForm.eventType === "resourceReservation" &&
-        eventForm.resourceId &&
-        eventForm.startDateTime &&
-        eventForm.endDateTime
-      ) {
-        try {
-        
-          const response = await axios.get(`${API_BASE_URL}/resource-availability`, {
-            withCredentials: true,
-            params: {
-              resourceId: eventForm.resourceId,
-              startDateTime: eventForm.startDateTime,
-              endDateTime: eventForm.endDateTime,
-              eventId: isEditMode ? selectedEvent?._id : null, // Exclude current event if editing
-            }
-          });
-          setResourceMaintenanceStatus(response.data.resourceStatus === "maintenance");
-          setIsResourceAvailable(response.data.available);
-  
-          if (!response.data.available) {
-            if (response.data.resourceStatus === "maintenance") {
-              setResourceConflictMessage("Resource is currently under maintenance");
-            } else {
-              setResourceConflictMessage("Resource is already reserved during this time period");
-            }
-  
-            if (response.data.conflictingEvents?.length > 0) {
-              setResourceConflictMessage("");
-              setConflictingEvents(response.data.conflictingEvents);
-            }
-          }
-        } catch (error) {
-          console.error("Error checking resource availability:", error);
-          setIsResourceAvailable(false);
-          setResourceMaintenanceStatus(false);
-          setResourceConflictMessage("Error checking resource availability");
-        }
-      } else {
-        setIsResourceAvailable(true);
-        setResourceConflictMessage("");
-        setConflictingEvents([]);
-        setReservationTimeline([]);
-      }
-    };
-  
-    checkResourceAvailability();
-  }, [eventForm.resourceId, eventForm.startDateTime, eventForm.endDateTime, eventForm.eventType, selectedEvent, isEditMode]);
  
-
-useEffect(() => {
-  if (eventForm.eventType === "resourceReservation" && eventForm.resourceType) {
-    const fetchResources = async () => {
-      setLoadingResources(true);
+  useEffect(() => {
+    const fetchResourceTypes = async () => {
+      setLoadingResourceTypes(true);
       try {
-       
-        const response = await axios.get(`${API_BASE_URL}/resources`, {
-          withCredentials: true,
-          params: { 
-            type: eventForm.resourceType,
-            date: eventForm.startDateTime || format(new Date(), "yyyy-MM-dd'T'HH:mm")
-          }
+        // We'll get distinct resource types from the backend
+        const response = await axios.get(`${API_BASE_URL}/types`, {
+          withCredentials: true
         });
-        
-        setResourcesList(response.data);
-        
-        // Highlight available resources
-        const availableResources = response.data.filter(r => 
-          r.status === 'available' || (r.nextAvailableAt && new Date(r.nextAvailableAt) <= new Date(eventForm.startDateTime))
-        );
-        setAvailableResourcesCount(availableResources.length);
+        setResourceTypes(response.data);
       } catch (error) {
-        console.error("Error fetching resources:", error);
+        console.error("Error fetching resource types:", error);
       } finally {
-        setLoadingResources(false);
+        setLoadingResourceTypes(false);
       }
     };
     
-    fetchResources();
-  } else {
-    setResourcesList([]);
-    setAvailableResourcesCount(0);
-  }
-}, [eventForm.eventType, eventForm.resourceType, eventForm.startDateTime]);
+    fetchResourceTypes();
+  }, []);
+
+  useEffect(() => {
+    if (eventForm.eventType === "resourceReservation" && eventForm.resourceType) {
+      const fetchResources = async () => {
+        setLoadingResources(true);
+        try {
+          // Make sure we have valid start and end times
+          const startTime = eventForm.startDateTime || format(startDate, "yyyy-MM-dd'T'HH:mm");
+          const endTime = eventForm.endDateTime || format(endDate, "yyyy-MM-dd'T'HH:mm");
+          
+          const response = await axios.get(`${API_BASE_URL}/resources`, {
+            withCredentials: true,
+            params: { 
+              type: eventForm.resourceType,
+              startDateTime: startTime,
+              endDateTime: endTime
+            }
+          });
+          
+          setResourcesList(response.data);
+          
+          // Count available resources
+          setAvailableResourcesCount(response.data.length);
+        } catch (error) {
+          console.error("Error fetching resources:", error);
+        } finally {
+          setLoadingResources(false);
+        }
+      };
+      
+      fetchResources();
+    } else {
+      setResourcesList([]);
+      setAvailableResourcesCount(0);
+    }
+  }, [eventForm.eventType, eventForm.resourceType, eventForm.startDateTime, eventForm.endDateTime]);
 
   useEffect(() => {
     // Apply filters to events
@@ -236,7 +200,6 @@ useEffect(() => {
     try {
       setIsLoading(true);
       
-  
       let startDate, endDate;
       if (viewMode === "month") {
         startDate = startOfMonth(currentDate);
@@ -268,7 +231,6 @@ useEffect(() => {
   
   const fetchDepartments = async () => {
     try {
-      
       const response = await axios.get("http://localhost:8080/api/departments", {
         withCredentials: true
       });
@@ -285,10 +247,7 @@ useEffect(() => {
       });
   
       // Filter users with role 'employee' or 'manager'
-      const filteredUsers = response.data.users.filter(user => 
-        user.role === "employee" || user.role === "manager"
-      );
-  
+      const filteredUsers = response.data.users;
       setUsersList(filteredUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -345,13 +304,14 @@ useEffect(() => {
       visibility: event.visibility,
       startDateTime: event.startDateTime,
       endDateTime: event.endDateTime,
-      description:event.description,
+      description: event.description,
       usersInvolved: event.usersInvolved ? event.usersInvolved.map(user =>
         typeof user === 'object' ? user.userId : user
       ) : []
     };
     
     if (event.eventType === 'mission') {
+      baseForm.description = event.description || '';
       baseForm.destination = event.destination || '';
     } else if (event.eventType === 'meeting') {
       baseForm.description = event.description || '';
@@ -359,7 +319,7 @@ useEffect(() => {
     } else if (event.eventType === 'resourceReservation') {
       try {
         if (event.resource) {
-          const resourceId = event.resource._id;
+          const resourceId = typeof event.resource === 'object' ? event.resource._id : event.resource;
           
           const response = await axios.get(`${API_BASE_URL}/resources/${resourceId}`, {
             withCredentials: true
@@ -371,19 +331,30 @@ useEffect(() => {
             baseForm.resourceName = response.data.name;
             
             if (response.data.type) {
+              // Fetch all resources of this type that are available during our event time
               const resourcesResponse = await axios.get(`${API_BASE_URL}/resources`, {
                 withCredentials: true,
-                params: { type: response.data.type }
+                params: { 
+                  type: response.data.type,
+                  startDateTime: event.startDateTime,
+                  endDateTime: event.endDateTime
+                }
               });
               
               if (resourcesResponse.data) {
-                setResourcesList(resourcesResponse.data);
+                // Add the currently selected resource to the list if it's not there
+                const resourceExists = resourcesResponse.data.some(r => r._id === resourceId);
                 
-                const availableResources = resourcesResponse.data.filter(r =>
-                  r.status === 'available' ||
-                  (r.nextAvailableAt && new Date(r.nextAvailableAt) <= new Date(event.startDateTime))
-                );
-                setAvailableResourcesCount(availableResources.length);
+                if (!resourceExists) {
+                  // Add the current resource with a special flag
+                  resourcesResponse.data.push({
+                    ...response.data,
+                    isCurrentResource: true
+                  });
+                }
+                
+                setResourcesList(resourcesResponse.data);
+                setAvailableResourcesCount(resourcesResponse.data.length);
               }
             }
           }
@@ -391,6 +362,7 @@ useEffect(() => {
         
         setLoadingResources(false);
       } catch (error) {
+        console.error("Error fetching resource details:", error);
         setLoadingResources(false);
       }
     }
@@ -398,175 +370,104 @@ useEffect(() => {
     setEventForm(baseForm);
     setShowEventModal(true);
   };
-// Updated form submission logic
-const handleSubmitEvent = async (e) => {
-  e.preventDefault();
 
-  // Block submission if resource is under maintenance or unavailable
-  if (eventForm.eventType === "resourceReservation") {
-    if (resourceMaintenanceStatus) {
-      Swal.fire({
-        title: "Resource Unavailable",
-        text: "This resource is currently under maintenance and cannot be reserved.",
-        icon: "warning",
-        background: "#1E1E1E",
-        color: "#fff"
-      });
-      return;
-    } else if (!isEditMode && !isResourceAvailable) {
-      Swal.fire({
-        title: "Resource Unavailable",
-        text: resourceConflictMessage,
-        icon: "warning",
-        background: "#1E1E1E",
-        color: "#fff",
-        showCancelButton: true,
-        confirmButtonText: "Show Conflicting Reservations",
-        cancelButtonText: "Back to Form"
-      }).then((result) => {
-        if (result.isConfirmed && conflictingEvents.length > 0) {
-          let conflictsList = conflictingEvents.map(event =>
-            `${event.title} - ${format(new Date(event.startDateTime), "MMM d, h:mm a")} to ${format(new Date(event.endDateTime), "h:mm a")}`
-          ).join("\n");
+  const handleSubmitEvent = async (e) => {
+    e.preventDefault();
 
-          Swal.fire({
-            title: "Conflicting Reservations",
-            text: conflictsList,
-            icon: "info",
-            background: "#1E1E1E",
-            color: "#fff"
-          });
-        }
-      });
-      return;
-    }
-  }
-  try {
-    // Get user ID from the state
-    const userId = user?.id;
-    let formData = { ...eventForm };
+    try {
+      // Get user ID from the state
+      const userId = user?.id;
+      let formData = { ...eventForm };
 
-    // Adjust fields for resource reservations
-    if (formData.eventType === "resourceReservation") {
-      formData.resource = formData.resourceId;
-      delete formData.resourceType;
-      delete formData.resourceId;
-    } else {
-      delete formData.resourceType;
-      delete formData.resourceId;
-    }
-
-    // Format users involved
-    if (formData.usersInvolved && formData.usersInvolved.length > 0) {
-      formData.usersInvolved = formData.usersInvolved.map(user => {
-        const userId = typeof user === "object" ? user.userId || user : user;
-        return { userId, status: "pending" };
-      });
-    }
-
-    if (isEditMode && selectedEvent) {
-      // Update existing event
-      await axios.put(`${API_BASE_URL}/event/${selectedEvent._id}/${userId}`, formData, {
-        withCredentials: true
-      });
-
-      Swal.fire({
-        title: "Success!",
-        text: "Event updated successfully.",
-        icon: "success",
-        background: "#1E1E1E",
-        color: "#fff"
-      });
-    } else {
-      // Create new event
-      await axios.post(`${API_BASE_URL}/event/${userId}`, formData, {
-        withCredentials: true
-      });
-
-      Swal.fire({
-        title: "Success!",
-        text: "Event created successfully.",
-        icon: "success",
-        background: "#1E1E1E",
-        color: "#fff"
-      });
-    }
-
-    setShowEventModal(false);
-    fetchEvents();
-  } catch (error) {
-    console.error("Error saving event:", error);
-  
-    let errorMessage = "Failed to save event.";
-    let errorStatus = error.response?.data?.status || "";
-    let errorDetails = "";
-  
-    // First, check for specific status codes
-    if (errorStatus) {
-      switch (errorStatus) {
-        case "resource_conflict":
-          errorMessage = "This resource is already reserved for the selected time period.";
-          errorDetails = error.response?.data?.message || "";
-          break;
-        case "invalid_dates":
-          errorMessage = "End date must be after start date.";
-          break;
-        case "duration_too_short":
-          errorMessage = "Event must be at least 10 minutes long.";
-          break;
-        case "missing_description":
-          errorMessage = "Description is required for meetings.";
-          break;
-        case "missing_location":
-          errorMessage = "Location is required for meetings.";
-          break;
-        case "missing_destination":
-          errorMessage = "Destination is required for missions.";
-          break;
-        case "missing_resource":
-          errorMessage = "Resource is required for resource reservations.";
-          break;
-        default:
-          // If we have a message from the backend but no specific handling,
-          // use that message
-          if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-          }
+      // Adjust fields for resource reservations
+      if (formData.eventType === "resourceReservation") {
+        formData.resource = formData.resourceId;
+        delete formData.resourceType;
+        delete formData.resourceId;
+      } else {
+        delete formData.resourceType;
+        delete formData.resourceId;
       }
-    } else if (error.response?.data?.message) {
-      // If no status code but we have a message
-      errorMessage = error.response.data.message;
-    }
-  
-    // If we have conflicting events, provide option to view them
-    if (errorStatus === "resource_conflict" && error.response?.data?.conflictingEvents) {
-      Swal.fire({
-        title: "Resource Conflict",
-        text: errorMessage,
-        icon: "warning",
-        background: "#1E1E1E",
-        color: "#fff",
-        showCancelButton: true,
-        confirmButtonText: "View Conflicts",
-        cancelButtonText: "OK"
-      }).then((result) => {
-        if (result.isConfirmed && error.response?.data?.conflictingEvents.length > 0) {
-          let conflicts = error.response.data.conflictingEvents;
-          let conflictsList = conflicts.map(event =>
-            `${event.title} - ${format(new Date(event.startDateTime), "MMM d, h:mm a")} to ${format(new Date(event.endDateTime), "h:mm a")}`
-          ).join("\n");
-  
-          Swal.fire({
-            title: "Conflicting Reservations",
-            text: conflictsList,
-            icon: "info",
-            background: "#1E1E1E",
-            color: "#fff"
-          });
+
+      // Format users involved
+      if (formData.usersInvolved && formData.usersInvolved.length > 0) {
+        formData.usersInvolved = formData.usersInvolved.map(user => {
+          const userId = typeof user === "object" ? user.userId || user : user;
+          return { userId, status: "pending" };
+        });
+      }
+
+      if (isEditMode && selectedEvent) {
+        // Update existing event
+        await axios.put(`${API_BASE_URL}/event/${selectedEvent._id}/${userId}`, formData, {
+          withCredentials: true
+        });
+
+        Swal.fire({
+          title: "Success!",
+          text: "Event updated successfully.",
+          icon: "success",
+          background: "#1E1E1E",
+          color: "#fff"
+        });
+      } else {
+        // Create new event
+        await axios.post(`${API_BASE_URL}/event/${userId}`, formData, {
+          withCredentials: true
+        });
+
+        Swal.fire({
+          title: "Success!",
+          text: "Event created successfully.",
+          icon: "success",
+          background: "#1E1E1E",
+          color: "#fff"
+        });
+      }
+
+      setShowEventModal(false);
+      fetchEvents();
+    } catch (error) {
+      console.error("Error saving event:", error);
+    
+      let errorMessage = "Failed to save event.";
+      let errorStatus = error.response?.data?.status || "";
+      
+      // First, check for specific status codes
+      if (errorStatus) {
+        switch (errorStatus) {
+          case "invalid_dates":
+            errorMessage = "End date must be after start date.";
+            break;
+          case "duration_too_short":
+            errorMessage = "Event must be at least 10 minutes long.";
+            break;
+          case "mmissing_meeting_description":
+            errorMessage = "Description is required for meetings.";
+            break;
+          case "missing_location":
+            errorMessage = "Location is required for meetings.";
+            break;
+          case "missing_destination":
+            errorMessage = "Destination is required for missions.";
+            break;
+          case "missing_mission_description":
+              errorMessage = "Description is required for missions.";
+              break;
+          case "missing_resource":
+            errorMessage = "Resource is required for resource reservations.";
+            break;
+          default:
+            if (error.response?.data?.message) {
+              errorMessage = error.response.data.message;
+            }
         }
-      });
-    } else {
-      // For all other errors, show a simple error message
+      } else if (error.response?.data?.message) {
+        // If no status code but we have a message
+        errorMessage = error.response.data.message;
+      }
+    
+      // Show error message
       Swal.fire({
         title: "Error!",
         text: errorMessage,
@@ -575,8 +476,7 @@ const handleSubmitEvent = async (e) => {
         color: "#fff"
       });
     }
-  }
-};
+  };
 
 const handleDeleteEvent = async () => {
   try {
@@ -747,22 +647,18 @@ const handleUpdateAttendeeStatus = async (status) => {
   
 
   const handlePrevMonth = () => {
-    if (viewMode === "month") {
+    if ((viewMode === "month")||(viewMode === "list")){
       setCurrentDate(subMonths(currentDate, 1));
-    } else if (viewMode === "week") {
+    } else{
       setCurrentDate(addDays(currentDate, -7));
-    } else if (viewMode === "day") {
-      setCurrentDate(addDays(currentDate, -1));
-    }
+    } 
   };
 
   const handleNextMonth = () => {
-    if (viewMode === "month") {
+    if ((viewMode === "month")||(viewMode === "list")){
       setCurrentDate(addMonths(currentDate, 1));
-    } else if (viewMode === "week") {
+    } else {
       setCurrentDate(addDays(currentDate, 7));
-    } else if (viewMode === "day") {
-      setCurrentDate(addDays(currentDate, 1));
     }
   };
 
@@ -1342,7 +1238,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     {selectedEvent.createdBy && selectedEvent.createdBy._id === user.id && (
                       <div className="flex space-x-3">
                       <button
-                        onClick={() => handleEditEvent(selectedEvent)} // Trigger handleEditEvent instead of manually setting state
+                        onClick={() => handleEditEvent(selectedEvent)} 
                         className="px-4 py-2 rounded-lg bg-[#3baca5] hover:bg-[#2c8c86] text-white"
                       >
                         Edit Event
@@ -1476,13 +1372,13 @@ const handleUpdateAttendeeStatus = async (status) => {
                       />
                     </div>
                     <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-400 block mb-2">Description</label>
-                    <textarea
-                      value={eventForm.description}
-                      onChange={(e) => setEventForm({...eventForm, description: e.target.value})}
-                      className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5] min-h-[100px]"
-                    ></textarea>
-                  </div>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">Description</label>
+                      <textarea
+                        value={eventForm.description}
+                        onChange={(e) => setEventForm({...eventForm, description: e.target.value})}
+                        className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5] min-h-[100px]"
+                      ></textarea>
+                    </div>
                     
                     {eventForm.eventType === "mission" && (
                       <div>
@@ -1497,150 +1393,77 @@ const handleUpdateAttendeeStatus = async (status) => {
                     )}
                     
                     {eventForm.eventType === "resourceReservation" && (
-                      <>
-                        <div>
-                          <label className="text-sm font-medium text-gray-400 block mb-2">
-                            Resource Type
-                          </label>
-                          <select
-                            value={eventForm.resourceType}
-                            onChange={(e) => setEventForm({ ...eventForm, resourceType: e.target.value })}
-                            className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
-                          >
-                            <option value="">Select Resource Type</option>
-                            <option value="desktop">Desktop</option>
-                            <option value="meetingRoom">Meeting Room</option>
-                            <option value="office">Office</option>
-                            <option value="robot">Robot</option>
-                            <option value="toolKit">Tool Kit</option>
-                            <option value="testingEquipment">Testing Equipment</option>
-                            <option value="prototype">Prototype</option>
-                          </select>
-                        </div>
+          <>
+            <div>
+              <label className="text-sm font-medium text-gray-400 block mb-2">
+                Resource Type
+              </label>
+              {loadingResourceTypes ? (
+                <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
+                  <span className="text-gray-500">Loading resource types...</span>
+                </div>
+              ) : (
+                <select
+                  value={eventForm.resourceType}
+                  onChange={(e) => setEventForm({ ...eventForm, resourceType: e.target.value, resourceId: '' })}
+                  className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
+                >
+                  <option value="">Select Resource Type</option>
+                  {resourceTypes.map(type => (
+                    <option key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-                        <div>
-                          <label className="text-sm font-medium text-gray-400 block mb-2">Resource</label>
-                          <div className="relative">
-                            {loadingResources ? (
-                              <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
-                                <span className="text-gray-500">Loading resources...</span>
-                              </div>
-                            ) : (
-                              <>
-                                <select
-                                  value={eventForm.resourceId}
-                                  onChange={(e) => setEventForm({ ...eventForm, resourceId: e.target.value })}
-                                  className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
-                                >
-                                  <option value="">Select a resource</option>
-                                  {resourcesList.map(resource => (
-                                  <option 
-                                    key={resource._id} 
-                                    value={resource._id}
-                                    className={resource.status === 'maintenance' ? 'text-yellow-500' : 'text-green-500'}
-                                  >
-                                    {resource.name} {resource.identifier ? `(${resource.identifier})` : ''}
-                                    {resource.status === 'maintenance' ? ' - Under Maintenance' : ''}
-                                  </option>
-                                ))}
-                                </select>
-
-                                {eventForm.resourceId && eventForm.startDateTime && eventForm.endDateTime && (
-                                  <div className="mt-2 px-2 py-1 rounded text-sm">
-                                    {loadingResources ? (
-                                      <span className="text-gray-400">Checking availability...</span>
-                                    ) : (
-                                      <>
-                                        {isResourceAvailable ? (
-                                          <div className="flex items-center text-green-500">
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              className="h-4 w-4 mr-1"
-                                              fill="none"
-                                              viewBox="0 0 24 24"
-                                              stroke="currentColor"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M5 13l4 4L19 7"
-                                              />
-                                            </svg>
-                                            <span>Resource is available for the selected time</span>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center text-red-500">
-                                            <svg
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              className="h-4 w-4 mr-1"
-                                              fill="none"
-                                              viewBox="0 0 24 24"
-                                              stroke="currentColor"
-                                            >
-                                              <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M6 18L18 6M6 6l12 12"
-                                              />
-                                            </svg>
-                                            <span>{resourceConflictMessage}</span>
-                                            {conflictingEvents.length > 0 && (
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  let conflictsList = conflictingEvents
-                                                    .map(
-                                                      (event) =>
-                                                        `${event.title} - ${format(
-                                                          new Date(event.startDateTime),
-                                                          "MMM d, h:mm a"
-                                                        )} to ${format(new Date(event.endDateTime), "h:mm a")}`
-                                                    )
-                                                    .join("\n");
-
-                                                  Swal.fire({
-                                                    title: "Conflicting Reservations",
-                                                    text: conflictsList,
-                                                    icon: "info",
-                                                    background: "#1E1E1E",
-                                                    color: "#fff",
-                                                  });
-                                                }}
-                                                className="ml-2 text-xs underline hover:text-red-400"
-                                              >
-                                                View conflicts
-                                              </button>
-                                            )}
-                                          </div>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                          {availableResourcesCount ===0 && resourcesList.length > 0 && (
-                            <p className="text-xs text-green-500 mt-1">
-                              {availableResourcesCount} of {resourcesList.length} resources available
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                    {(eventForm.eventType === "meeting" )&& (
+            <div>
+              <label className="text-sm font-medium text-gray-400 block mb-2">Resource</label>
+              <div className="relative">
+                {loadingResources ? (
+                  <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
+                    <span className="text-gray-500">Loading resources...</span>
+                  </div>
+                ) : (
+                  <select
+                    value={eventForm.resourceId}
+                    onChange={(e) => setEventForm({ ...eventForm, resourceId: e.target.value })}
+                    className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
+                    disabled={!eventForm.resourceType || resourcesList.length === 0}
+                  >
+                    <option value="">Select a resource</option>
+                    {resourcesList.map(resource => (
+                      <option 
+                        key={resource._id} 
+                        value={resource._id}
+                        disabled={resource.status === 'unavailable' && !resource.isCurrentResource}
+                      >
+                        {resource.name} {resource.identifier ? `(${resource.identifier})` : ''} 
+                        {resource.isCurrentResource ? " (Currently Selected)" : ""}
+                        {resource.status === 'unavailable' && !resource.isCurrentResource ? " (Unavailable)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {eventForm.resourceType && resourcesList.length === 0 && !loadingResources && (
+                  <p className="text-sm text-amber-500 mt-1">No available resources found for this time slot</p>
+                )}
+              </div>
+            </div>
+          </>
+                     )}
                     
-                       <div>
-                       <label className="text-sm font-medium text-gray-400 block mb-2">Location</label>
-                       <input
-                         type="text"
-                         value={eventForm.location}
-                         onChange={(e) => setEventForm({...eventForm, location: e.target.value})}
-                         className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
-                       />
-                     </div>
+                    {(eventForm.eventType === "meeting") && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-400 block mb-2">Location</label>
+                        <input
+                          type="text"
+                          value={eventForm.location}
+                          onChange={(e) => setEventForm({...eventForm, location: e.target.value})}
+                          className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
+                        />
+                      </div>
                     )}
                     
                     <div className="md:col-span-2">

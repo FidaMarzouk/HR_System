@@ -33,7 +33,7 @@ const validateEventFields = (eventType, body) => {
     },
     meeting: () => {
       if (!body.description || body.description.trim() === '') {
-        return { valid: false, status: 'missing_description' };
+        return { valid: false, status: 'missing_meeting_description' };
       }
       if (!body.location || body.location.trim() === '') {
         return { valid: false, status: 'missing_location' };
@@ -42,7 +42,7 @@ const validateEventFields = (eventType, body) => {
     },
     mission: () => {
       if (!body.description || body.description.trim() === '') {
-        return { valid: false, status: 'missing_description' };
+        return { valid: false, status: 'missing_mission_description' };
       }
       if (!body.destination || body.destination.trim() === '') {
         return { valid: false, status: 'missing_destination' };
@@ -174,54 +174,6 @@ const notifyNewlyAddedUsers = async (event, updatedUsersInvolved, creator) => {
   }
 };
 
-const checkResourceConflicts = async (resourceId, startDateTime, endDateTime, excludeEventId = null) => {
-  // First, check if the resource exists
-  const resource = await Resource.findById(resourceId);
-  
-  // Check if resource is under maintenance
-  if (resource.status === "maintenance") {
-    return {
-      available: false,
-      resourceStatus: "maintenance",
-      message: "Resource is under maintenance",
-      conflictingEvents: []
-    };
-  }
-
-  // Query for conflicting events
-  let query = {
-    eventType: "resourceReservation",
-    resource: resourceId,
-    status: { $ne: "declined" }, // Ignore declined reservations
-    $or: [
-      { startDateTime: { $lt: new Date(endDateTime), $gte: new Date(startDateTime) } }, // Event starts within the requested period
-      { endDateTime: { $gt: new Date(startDateTime), $lte: new Date(endDateTime) } }, // Event ends within the requested period
-      { 
-        $and: [
-          { startDateTime: { $lte: new Date(startDateTime) } }, 
-          { endDateTime: { $gte: new Date(endDateTime) } } // Existing event fully overlaps the requested period
-        ] 
-      }
-    ]
-  };
-
-  // Exclude the currently edited event (if provided)
-  if (excludeEventId) {
-    query._id = { $ne: excludeEventId };
-  }
-
-  // Find conflicting events
-  const conflictingEvents = await CalendarEvent.find(query)
-    .populate("createdBy", "firstName lastName");
-
-  return {
-    available: conflictingEvents.length === 0,
-    resourceStatus: conflictingEvents.length > 0 ? "unavailable" : "available",
-    message: conflictingEvents.length > 0 ? "Resource already reserved for this time period" : "Resource is available",
-    conflictingEvents: conflictingEvents
-  };
-};
-
 exports.getEvents = async (req, res) => {
   try {
     const { startDate, endDate, eventType, visibility, status } = req.query;
@@ -263,8 +215,6 @@ exports.getEvents = async (req, res) => {
       .populate('departmentId', 'name')
       .populate('resource', 'name type')
       .populate('usersInvolved.userId', 'firstName lastName')
-      .populate('adminActions.approvedBy', 'firstName lastName')
-      .populate('adminActions.declinedBy', 'firstName lastName')
       .sort({ startDateTime: 1 });
       
     res.status(200).json(events);
@@ -274,7 +224,7 @@ exports.getEvents = async (req, res) => {
   }
 };
 
-// Create a new event - Refactored
+// Create a new event - Modified to remove resource conflict check
 exports.createEvent = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -291,23 +241,6 @@ exports.createEvent = async (req, res) => {
     const fieldsValidation = validateEventFields(eventType, req.body);
     if (!fieldsValidation.valid) {
       return res.status(400).json({ status: fieldsValidation.status });
-    }
-    
-    // Check resource availability for resource reservations
-    if (eventType === 'resourceReservation') {
-      const availabilityCheck = await checkResourceConflicts(
-        req.body.resource, 
-        req.body.startDateTime, 
-        req.body.endDateTime
-      );
-      
-      if (!availabilityCheck.available) {
-        return res.status(400).json({ 
-          message: availabilityCheck.message,
-          status: 'resource_conflict',
-          conflictingEvents: availabilityCheck.conflictingEvents
-        });
-      }
     }
     
     // Build event data structure
@@ -369,13 +302,14 @@ exports.updateEvent = async (req, res) => {
     }
     
     // Create updateData with common fields
-    const updateData = {
-      title: req.body.title,
-      visibility: req.body.visibility,
-      startDateTime: req.body.startDateTime,
-      endDateTime: req.body.endDateTime,
-      description: req.body.description,
-    };
+    const updateData = {};
+    
+    // Only add fields that are present in the request body
+    ['title', 'visibility', 'startDateTime', 'endDateTime', 'description'].forEach(field => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
     
     // Add type-specific fields based on event type
     const typeSpecificFieldMap = {
@@ -394,28 +328,6 @@ exports.updateEvent = async (req, res) => {
     // Add users involved if present
     if (req.body.usersInvolved) {
       updateData.usersInvolved = req.body.usersInvolved;
-    }
-    
-    // Resource availability check
-    if ((req.body.startDateTime || req.body.endDateTime || req.body.resource) && 
-        event.eventType === 'resourceReservation') {
-      const resourceId = req.body.resource || event.resource;
-      const startDateTime = req.body.startDateTime || event.startDateTime;
-      const endDateTime = req.body.endDateTime || event.endDateTime;
-      
-      const availabilityCheck = await checkResourceConflicts(
-        resourceId, 
-        startDateTime, 
-        endDateTime, 
-        eventId
-      );
-      
-      if (!availabilityCheck.available) {
-        return res.status(400).json({ 
-          status: 'resource_conflict',
-          conflictingEvents: availabilityCheck.conflictingEvents
-        });
-      }
     }
     
     // Handle visibility validation
@@ -463,7 +375,6 @@ exports.updateEvent = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 // Delete an event
 exports.deleteEvent = async (req, res) => {
   try {
@@ -523,10 +434,8 @@ exports.adminReviewEvent = async (req, res) => {
     const adminActionData = {};
     
     if (status === 'approved') {
-      adminActionData.approvedBy = adminId;
       adminActionData.approvedAt = new Date();
     } else {
-      adminActionData.declinedBy = adminId;
       adminActionData.declinedAt = new Date();
     }
     
@@ -564,28 +473,6 @@ exports.adminReviewEvent = async (req, res) => {
   }
 };
 
-// Check resource availability
-exports.checkResourceAvailability = async (req, res) => {
-  try {
-    const { resourceId, startDateTime, endDateTime, eventId } = req.query; // Accept eventId
-
-    if (!resourceId || !startDateTime || !endDateTime) {
-      return res.status(400).json({
-        message: "Missing required parameters",
-        status: "missing_params"
-      });
-    }
-
-    // Call helper function, passing eventId to exclude it from conflicts
-    const availabilityResult = await checkResourceConflicts(resourceId, startDateTime, endDateTime, eventId);
-
-    res.status(200).json(availabilityResult);
-  } catch (error) {
-    console.error("Error checking resource availability:", error);
-    res.status(400).json({ message: error.message });
-  }
-};
-
 exports.getUsersInvolved = async (req, res) => {
   try {
     const users = await User.find().select("-password")
@@ -604,54 +491,62 @@ exports.getUsersInvolved = async (req, res) => {
   }
 };
 
-// Get resources list 
 exports.getResources = async (req, res) => {
   try {
-    const { type, date } = req.query;
-    const now = new Date();
+    const { type, startDateTime, endDateTime } = req.query;
     
-    // Base query for resources
-    let query = {};
+    // Parse dates or default to current time
+    const checkStartTime = startDateTime ? new Date(startDateTime) : new Date();
+    const checkEndTime = endDateTime ? new Date(endDateTime) : new Date(checkStartTime.getTime() + 30 * 60000); // Default to 30 min later
+    
+    // Base query for resources - filtering out maintenance resources
+    let query = {
+      status: { $ne: 'maintenance' } // Exclude resources under maintenance
+    };
     
     // Add type filter if provided
     if (type) query.type = type;
     
     const resources = await Resource.find(query).sort({ name: 1 });
     
-    // For each resource, check its availability status
+    // For each resource, check its availability status during the requested time period
     const result = await Promise.all(resources.map(async (resource) => {
       // Convert mongoose document to plain object so we can modify it
       const resourceObj = resource.toObject();
       
-      // Check for ongoing reservations (current)
-      const currentReservations = await CalendarEvent.find({
+      // Check for overlapping reservations during the requested time period
+      const conflictingReservations = await CalendarEvent.find({
         eventType: 'resourceReservation',
         resource: resource._id,
-        status: 'approved',
-        startDateTime: { $lte: now },
-        endDateTime: { $gt: now }
+        status: 'approved', // Only consider approved reservations
+        $or: [
+          // Case 1: Event starts during our time window
+          { startDateTime: { $gte: checkStartTime, $lt: checkEndTime } },
+          // Case 2: Event ends during our time window
+          { endDateTime: { $gt: checkStartTime, $lte: checkEndTime } },
+          // Case 3: Event spans our entire time window
+          { startDateTime: { $lte: checkStartTime }, endDateTime: { $gte: checkEndTime } }
+        ]
       }).sort({ startDateTime: 1 });
       
-      // Mark as unavailable if there's an active reservation
-      if (currentReservations.length > 0) {
-        resourceObj.status = resource.status === 'maintenance' ? 'maintenance' : 'unavailable';
+      // Set availability status
+      if (conflictingReservations.length > 0) {
+        resourceObj.status = 'unavailable';
         resourceObj.currentReservation = {
-          id: currentReservations[0]._id,
-          title: currentReservations[0].title,
-          endsAt: currentReservations[0].endDateTime
+          id: conflictingReservations[0]._id,
+          title: conflictingReservations[0].title,
+          endsAt: conflictingReservations[0].endDateTime
         };
       } else {
-        resourceObj.status = resource.status === 'maintenance' ? 'maintenance' : 'available';
+        resourceObj.status = 'available';
       }
+      
       return resourceObj;
     }));
     
-    // Filter results based on requested status
-    const finalResult = req.query.status ? 
-      result.filter(r => r.status === req.query.status) : 
-      result;
-    
-    res.status(200).json(finalResult);
+    // Only return resources that are available during the requested time
+    const availableResources = result.filter(r => r.status === 'available');
+    res.status(200).json(availableResources);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -675,9 +570,17 @@ exports.getResourceById = async (req, res) => {
       name: resource.name,
       type: resource.type,
       status: resource.status,
-      nextAvailableAt: resource.nextAvailableAt,
-      // Add any other fields you need
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getResourceTypes = async (req, res) => {
+  try {
+    // Get all distinct resource types from the database
+    const types = await Resource.distinct('type');
+    
+    res.status(200).json(types);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
