@@ -26,6 +26,8 @@ import NotificationPage from '../../NotificationSystem';
 import ChatBot from '../../ChatBot';
 import ChatComponent from '../../TeamChat';
 import EmployeeDashboardHomePage from '../Employee_Dashboard/EmployeeDashboardHomepage';
+import { getSocket } from '../../../socketService';
+
   // Circuit pattern for background
   const CircuitPattern = () => (
     <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
@@ -57,7 +59,8 @@ const EmployeeDashboard = () => {
     firstName: '',
     lastName: '',
     picture: '',
-    role: 'Employee'
+    role: 'Employee',
+    id: ''
   });
 
     useEffect(() => {
@@ -146,6 +149,7 @@ const EmployeeDashboard = () => {
     },
   ];
 
+  // Fetch unread notifications count
   const fetchUnreadNotificationCount = async () => {
     try {
       const response = await axios.get('http://localhost:8080/api/notifications', {
@@ -161,6 +165,8 @@ const EmployeeDashboard = () => {
       setUnreadNotifications(0);
     }
   };
+
+  // Fetch unread messages count
   const fetchUnreadMessagesCount = async () => {
     try {
       // Use the dedicated endpoint for unread count
@@ -175,109 +181,93 @@ const EmployeeDashboard = () => {
       setUnreadMessages(0);
     }
   };
-    // Add useEffect to fetch notification count when component mounts
-    useEffect(() => {
+
+  // Fetch user data
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/users/me', {
+        withCredentials: true
+      });
+      
+      if (response.data) {
+        setUser({
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          email: response.data.email,
+          picture: response.data.picture || '',
+          role: response.data.role || 'Employee',
+          id: response.data._id || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  // Initial data loading effect
+  useEffect(() => {
+    // Fetch user data first
+    fetchUserData();
+    
+    // Fetch initial counts
+    fetchUnreadNotificationCount();
+    fetchUnreadMessagesCount();
+    
+    // Set up timer for current time
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Setup socket listeners for notifications
+  useEffect(() => {
+    const socket = getSocket();
+  
+    // Notification listeners
+    socket.on('notification', () => {
       fetchUnreadNotificationCount();
-      
-      // Set up interval to periodically refresh the count (every 30 seconds)
-      const interval = setInterval(() => {
+    });
+  
+    socket.on('notificationUpdate', ({ type }) => {
+      if (type === 'read' || type === 'readAll' || type === 'delete') {
         fetchUnreadNotificationCount();
-      }, 500);
-      
-      return () => clearInterval(interval);
-    }, []);
-    useEffect(() => {
+      }
+    });
+  
+    return () => {
+      socket.off('notification');
+      socket.off('notificationUpdate');
+    };
+  }, []);
+
+  // Setup socket listeners for messages - depends on user.id
+  useEffect(() => {
+    // Only set up message listeners if we have a valid user ID
+    if (!user.id) return;
+    
+    const socket = getSocket();
+  
+    socket.on('newMessage', (message) => {
+      // Check if the message is for the current user
+      if (message.receiver && message.receiver._id === user.id) {
+        // Fetch latest count
+        fetchUnreadMessagesCount();
+      }
+    });
+  
+    socket.on('messagesRead', () => {
+      // Refresh count when messages are marked as read
       fetchUnreadMessagesCount();
-      
-      // Set up interval to periodically refresh the count
-      const interval = setInterval(() => {
-        fetchUnreadMessagesCount();
-      }, 30000);
-      
-      return () => clearInterval(interval);
-    }, []);
-    useEffect(() => {
-      // Initialize socket connection
-      const socket = io('http://localhost:8080', {
-        withCredentials: true
-      });
+    });
   
-      // Listen for new notifications
-      socket.on('notification', () => {
-        // Increment unread count when a new notification arrives
-        fetchUnreadNotificationCount();
-      });
-  
-      // Listen for notification updates (read/deleted)
-      socket.on('notificationUpdate', ({ type }) => {
-        if (type === 'read' || type === 'readAll' || type === 'delete') {
-          // Refresh count when notifications are marked as read or deleted
-          fetchUnreadNotificationCount();
-        }
-      });
-  
-      // Cleanup on unmount
-      return () => {
-        socket.disconnect();
-      };
-    }, []);
-    useEffect(() => {
-      // Initialize socket connection (can reuse existing socket if available)
-      const socket = io('http://localhost:8080', {
-        withCredentials: true
-      });
-    
-      // Listen for new chat messages
-      socket.on('newMessage', (message) => {
-        // Check if the message is for the current user
-        if (message.receiver._id === user.id) {
-          // Fetch latest count
-          fetchUnreadMessagesCount();
-        }
-      });
-    
-      // Listen for messages being marked as read
-      socket.on('messagesRead', () => {
-        // Refresh count when messages are marked as read
-        fetchUnreadMessagesCount();
-      });
-    
-      // Cleanup on unmount
-      return () => {
-        socket.disconnect();
-      };
-    }, [user.id]);
-  
-    useEffect(() => {
-      const timer = setInterval(() => {
-        setCurrentTime(new Date());
-      }, 60000);
-      
-      return () => clearInterval(timer);
-    }, []);
-      useEffect(() => {
-        const fetchUserData = async () => {
-          try {
-            const response = await axios.get('http://localhost:8080/api/users/me', {
-              withCredentials: true
-            });
-            
-            if (response.data) {
-              setUser({
-                firstName: response.data.firstName,
-                lastName: response.data.lastName,
-                email: response.data.email,
-                picture: response.data.picture || '',
-                role: response.data.role || 'Chief Executive Officer'
-              });
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
-        };
-      
-        fetchUserData();
-      }, []);
+    return () => {
+      socket.off('newMessage');
+      socket.off('messagesRead');
+    };
+  }, [user.id]);
+
    // Get greeting based on time of day
    const getGreeting = () => {
     const hour = currentTime.getHours();

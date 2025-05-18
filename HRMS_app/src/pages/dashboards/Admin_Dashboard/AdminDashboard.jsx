@@ -63,9 +63,126 @@ const AdminDashboard = () => {
   const [user, setUser] = useState({
     firstName: '',
     lastName: '',
-    picture: '',
-    role: 'System Administrator'
+    role: 'System Administrator',
+    id: ''
   });
+
+  // Fetch unread notifications count
+  const fetchUnreadNotificationCount = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/notifications', {
+        withCredentials: true
+      });
+      
+      // Calculate unread notifications
+      const notifications = Array.isArray(response.data) ? response.data : [];
+      const unreadCount = notifications.filter(n => !n.isRead).length;
+      setUnreadNotifications(unreadCount);
+    } catch (error) {
+      setUnreadNotifications(0);
+    }
+  };
+
+  // Fetch unread messages count
+  const fetchUnreadMessagesCount = async () => {
+    try {
+      // Use the dedicated endpoint for unread count
+      const response = await axios.get('http://localhost:8080/api/chat/unread', {
+        withCredentials: true
+      });
+      
+      // The endpoint directly returns { unreadCount }
+      setUnreadMessages(response.data.unreadCount);
+    } catch (error) {
+      setUnreadMessages(0);
+    }
+  };
+
+  // Fetch user data
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/users/me', {
+        withCredentials: true
+      });
+      
+      if (response.data) {
+        setUser({
+          firstName: response.data.firstName,
+          lastName: response.data.lastName,
+          email: response.data.email,
+          picture: response.data.picture || '',
+          role: response.data.role || 'System Administrator',
+          id: response.data._id || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  // Initial data loading effect
+  useEffect(() => {
+    // Fetch user data first
+    fetchUserData();
+    
+    // Fetch initial counts
+    fetchUnreadNotificationCount();
+    fetchUnreadMessagesCount();
+    
+    // Set up timer for current time
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Setup socket listeners for notifications
+  useEffect(() => {
+    const socket = getSocket();
+  
+    // Notification listeners
+    socket.on('notification', () => {
+      fetchUnreadNotificationCount();
+    });
+  
+    socket.on('notificationUpdate', ({ type }) => {
+      if (type === 'read' || type === 'readAll' || type === 'delete') {
+        fetchUnreadNotificationCount();
+      }
+    });
+  
+    return () => {
+      socket.off('notification');
+      socket.off('notificationUpdate');
+    };
+  }, []);
+
+  // Setup socket listeners for messages - depends on user.id
+  useEffect(() => {
+    // Only set up message listeners if we have a valid user ID
+    if (!user.id) return;
+    
+    const socket = getSocket();
+  
+    socket.on('newMessage', (message) => {
+      // Check if the message is for the current user
+      if (message.receiver && message.receiver._id === user.id) {
+        // Fetch latest count
+        fetchUnreadMessagesCount();
+      }
+    });
+  
+    socket.on('messagesRead', () => {
+      // Refresh count when messages are marked as read
+      fetchUnreadMessagesCount();
+    });
+  
+    return () => {
+      socket.off('newMessage');
+      socket.off('messagesRead');
+    };
+  }, [user.id]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -79,7 +196,6 @@ const AdminDashboard = () => {
       }
     };
 
-    // Add event listener when sidebar is open
     if (showMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
@@ -178,116 +294,10 @@ const AdminDashboard = () => {
     },
     { 
       name: "Logout", 
-      icon: <FaSignOutAlt className="w-5 h-5" /> 
+      icon: <FaSignOutAlt className="w-5 h-5" />,
+      onClick: () => handleLogout()
     },
   ];
-
-  const fetchUnreadNotificationCount = async () => {
-    try {
-      const response = await axios.get('http://localhost:8080/api/notifications', {
-        withCredentials: true
-      });
-      
-      // Calculate unread notifications
-      const notifications = Array.isArray(response.data) ? response.data : [];
-      const unreadCount = notifications.filter(n => !n.isRead).length;
-      setUnreadNotifications(unreadCount);
-    } catch (error) {
-      console.error('Error fetching notification count:', error);
-      setUnreadNotifications(0);
-    }
-  };
-  const fetchUnreadMessagesCount = async () => {
-    try {
-      // Use the dedicated endpoint for unread count
-      const response = await axios.get('http://localhost:8080/api/chat/unread', {
-        withCredentials: true
-      });
-      
-      // The endpoint directly returns { unreadCount }
-      setUnreadMessages(response.data.unreadCount);
-    } catch (error) {
-      console.error('Error fetching unread messages count:', error);
-      setUnreadMessages(0);
-    }
-  };
-  
-  useEffect(() => {
-    const socket = getSocket();
-  
-    // Set up component-specific listeners
-    socket.on('notification', () => {
-      fetchUnreadNotificationCount();
-    });
-  
-    socket.on('notificationUpdate', ({ type }) => {
-      if (type === 'read' || type === 'readAll' || type === 'delete') {
-        fetchUnreadNotificationCount();
-      }
-    });
-  
-    // No need to disconnect on unmount, just remove listeners
-    return () => {
-      socket.off('notification');
-      socket.off('notificationUpdate');
-    };
-  }, []);
-
-  useEffect(() => {
-    const socket = getSocket();
-  
-    // Set up component-specific listeners
-    socket.on('newMessage', (message) => {
-      // Check if the message is for the current user
-      if (message.receiver._id === user.id) {
-        // Fetch latest count
-        fetchUnreadMessagesCount();
-      }
-    });
-  
-    socket.on('messagesRead', () => {
-      // Refresh count when messages are marked as read
-      fetchUnreadMessagesCount();
-    });
-  
-    // No need to disconnect on unmount, just remove listeners
-    return () => {
-      socket.disconnect();
-    };
-  }, [user.id]);
-
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    
-    return () => clearInterval(timer);
-  }, []);
-  
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/users/me', {
-          withCredentials: true
-        });
-        
-        if (response.data) {
-          setUser({
-            firstName: response.data.firstName,
-            lastName: response.data.lastName,
-            email: response.data.email,
-            picture: response.data.picture || '',
-            role: response.data.role || 'System Administrator'
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-  
-    fetchUserData();
-  }, []);
 
   // Get greeting based on time of day
   const getGreeting = () => {
@@ -310,7 +320,6 @@ const AdminDashboard = () => {
   };
 
   const handleCancelLogout = () => {
-    console.log("Cancel button clicked, closing modal...");
     setShowLogoutModal(false);
   };
   
