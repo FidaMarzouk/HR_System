@@ -29,14 +29,15 @@ const ManagerLeaveRequestPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [remainingDays, setRemainingDays] = useState(null);
-   const [filteredRequests, setFilteredRequests] = useState([]);
-   const [admin, setAdmin] = useState([]);
+  const [filteredRequests, setFilteredRequests] = useState([]);
+  const [admin, setAdmin] = useState([]);
 
-   const [sortOrder, setSortOrder] = useState("newest");
-   const [statusFilter, setStatusFilter] = useState("all");
-   const [showSortDropdown, setShowSortDropdown] = useState(false);
-   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [remainingDays, setRemainingDays] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
       // Initialize dates to current date whenever the create modal is opened
@@ -65,6 +66,22 @@ const ManagerLeaveRequestPage = () => {
     reason: '',
     adminId: ''
   });
+  const showSwal = (icon, title, text) => {
+    Swal.fire({
+      icon,
+      title,
+      text,
+      timer: 2000,
+      background: '#1e262c',
+      customClass: {
+        popup: 'bg-[#1E1E1E] text-white border border-gray-700',
+        title: 'text-white',
+        content: 'text-gray-300',
+        confirmButton: 'bg-[#3baca5] hover:bg-[#2a7d78] text-white'
+      }
+    });
+  };
+  
 
   const leaveTypes = [
     'Sick Leave',
@@ -84,11 +101,10 @@ const ManagerLeaveRequestPage = () => {
     'Admin Rejected',
   ];
 
-
   useEffect(() => {
+    fetchCurrentUser();
     fetchLeaveRequests();
     fetchAdmin();
-    fetchRemainingDays();
   }, []);
 
   const fetchAdmin = async () => {
@@ -107,18 +123,22 @@ const ManagerLeaveRequestPage = () => {
       console.error("Error fetching admin:", err.response?.data || err.message);
     }
   };
-  const fetchRemainingDays = async () => {
+
+  const fetchCurrentUser = async () => {
     try {
-     
-      const response = await axios.get("http://localhost:8080/api/users/remaining-leave-days", {
+      const response = await axios.get('http://localhost:8080/api/users/me', {
         withCredentials: true
       });
-      setRemainingDays(response.data.remainingLeaveDays);
-    } catch (err) {
-      console.error("Error fetching remaining days:", err);
+      
+      if (response.data) {
+        setCurrentUser(response.data);
+        setRemainingDays(response.data.remainingLeaveDays);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
     }
   };
- 
+
   // Validate form data
   const validateForm = () => {
     const errors = {};
@@ -169,9 +189,9 @@ const ManagerLeaveRequestPage = () => {
         color: '#2dd4bf',
         showConfirmButton: false,
         customClass: {
-          popup: 'rounded-lg shadow-xl',
+          popup: 'bg-[#1E1E1E] text-white border border-gray-700',
           title: 'text-[#2dd4bf]',
-          content: 'text-[#94a3b8]'
+          content: 'text-white'
       },
       });
 
@@ -184,7 +204,6 @@ const ManagerLeaveRequestPage = () => {
       });
       setFormErrors({});
       fetchLeaveRequests();
-      fetchRemainingDays();
       fetchAdmin();
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to create leave request";
@@ -213,6 +232,7 @@ const ManagerLeaveRequestPage = () => {
       [name]: value
     }));
   };
+
   useEffect(() => {
     applyFilters();
   }, [leaveRequests, sortOrder, statusFilter]);
@@ -312,20 +332,18 @@ const ManagerLeaveRequestPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Manager Approved":
-        return "#33adb4";
-      case "Admin Approved":
-        return "#31638a";
+        return "#23A49B"; // Deep teal
       case "Manager Rejected":
-      case "Admin Rejected":
-        return "#b91c1c";
-      case "Pending":
-        return "#6b7280";
+        return "#D98872"; // Warm terracotta
+        case "Admin Approved":
+          return "#31638a"; // Muted blue
+        case "Admin Rejected":
+          return "#b91c1c"; // Strong red
       default:
         return "#6b7280";
     }
   };
   
-
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRequest(null);
@@ -378,6 +396,14 @@ const ManagerLeaveRequestPage = () => {
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
+    // Get days difference between dates
+    const getDaysDifference = (startDate, endDate) => {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include end date
+      return diffDays;
+    };
 
    // Close dropdowns when clicking outside
     useEffect(() => {
@@ -412,6 +438,13 @@ const ManagerLeaveRequestPage = () => {
             Create Leave Request
           </button>
         </div>
+              {/* Leave Balance Card */}
+      <div className="w-full mb-4 bg-[#222] p-4 rounded-lg border border-[#333] shadow-sm">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-300">Remaining Leave Balance:</span>
+          <span className="text-xl font-semibold text-[#33adb4]">{remainingDays !== null ? remainingDays : '--'} days</span>
+        </div>
+      </div>
     
         {/* Filter Controls */}
         <div className="flex flex-wrap gap-3 mb-4">
@@ -501,9 +534,9 @@ const ManagerLeaveRequestPage = () => {
             <p className="text-red-400">{error}</p>
           </div>
         ) : (
-          /* Responsive Table - will show as cards on mobile and as table on larger screens */
+          /* Table */
           <div className="w-full overflow-x-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333]">
-            {/* Table for all screens, but with responsive adjustments */}
+            {/* Table for all screens with responsive adjustments */}
             <table className="table-auto w-full text-left border-separate border-spacing-y-1">
               <thead className="bg-[#2c2c2c] sticky top-0 hidden sm:table-header-group">
                 <tr>
@@ -511,6 +544,7 @@ const ManagerLeaveRequestPage = () => {
                   <th className="py-3 px-3 text-[#33adb4] text-sm font-bold">From</th>
                   <th className="py-3 px-3 text-[#33adb4] text-sm font-bold">To</th>
                   <th className="py-3 px-3 text-[#33adb4] text-sm font-bold">Reason</th>
+                  <th className="py-3 px-3 text-[#33adb4] text-sm font-bold">Duration</th>
                   <th className="py-3 px-3 text-[#33adb4] text-sm font-bold text-center">Status</th>
                   <th className="py-3 px-3 text-[#33adb4] text-sm font-bold text-center">Actions</th>
                 </tr>
@@ -552,6 +586,13 @@ const ManagerLeaveRequestPage = () => {
                         <span>{request.reason}</span>
                       </div>
                     </td>
+                      {/* Duration */}
+                       <td className="py-4 px-3 text-sm text-gray-300 block sm:table-cell">
+                      <div className="flex justify-between items-center sm:block">
+                        <span className="sm:hidden text-[#33adb4] font-medium">Duration</span>
+                        <span>{getDaysDifference(request.startDate, request.endDate)} days</span>
+                      </div>
+                    </td>
                     
                     {/* Status - centered on desktop */}
                     <td className="py-4 px-3 text-sm block sm:table-cell">
@@ -575,22 +616,18 @@ const ManagerLeaveRequestPage = () => {
                       <div className="flex justify-end sm:justify-center space-x-2">
                         <button 
                           onClick={() => {
-                            if ((request.status === "Manager Rejected") || (request.status === "Pending")) {
-                              setSelectedRequest(request);
-                              setActionType("approve");
-                              setIsModalOpen(true);
-                            } else {
-                              Swal.fire({
-                                icon: "warning",
-                                title: "Already Approved",
-                                text: "This leave request has already been approved.",
-                                customClass: {
-                                  popup: 'bg-[#1E1E1E] text-white border border-gray-700',
-                                  title: 'text-white',
-                                  content: 'text-gray-300',
-                                  confirmButton: 'bg-[#3baca5] hover:bg-[#2a7d78] text-white'
-                                }
-                              });
+                            switch (request.status) {
+                              case "Pending":
+                                setSelectedRequest(request);
+                                setActionType("approve");
+                                setIsModalOpen(true);
+                                break;
+                              case "Manager Approved":
+                                showSwal("warning", "Already Approved", "This leave request has already been approved.");
+                                break;
+                              case "Manager Rejected":
+                                showSwal("info", "Request Already Rejected", "This leave request has already been rejected and cannot be approved.");
+                                break;
                             }
                           }}
                           disabled={request.createdBy === "Manager"}
@@ -604,25 +641,24 @@ const ManagerLeaveRequestPage = () => {
                         </button>
     
                         <button 
-                          onClick={() => {
-                            if ((request.status === "Manager Approved") || (request.status === "Pending")){
+                        onClick={() => {
+                          switch (request.status) {
+                            case "Pending":
                               setSelectedRequest(request);
                               setActionType("reject");
                               setIsModalOpen(true);
-                            } else {
-                              Swal.fire({
-                                icon: "warning",
-                                title: "Already Rejected",
-                                text: "This leave request has already been rejected.",
-                                customClass: {
-                                  popup: 'bg-[#1E1E1E] text-white border border-gray-700',
-                                  title: 'text-white',
-                                  content: 'text-gray-300',
-                                  confirmButton: 'bg-[#3baca5] hover:bg-[#2a7d78] text-white'
-                                }
-                              });
-                            }
-                          }}
+                              break;
+                            case "Manager Rejected":
+                              showSwal("warning", "Already Rejected", "This leave request has already been rejected.");
+                              break;
+                            case "Manager Approved":
+                              showSwal("info", "Request Already Approved", "This leave request has already been approved and cannot be rejected.");
+                              break;
+                            default:
+                              // Optional: handle other statuses if needed
+                              break;
+                          }
+                        }}
                           disabled={request.createdBy === "Manager"}
                           className={`px-3 py-1 text-white rounded text-xs flex items-center transition-colors ${
                             request.createdBy === "Manager" 
@@ -641,7 +677,7 @@ const ManagerLeaveRequestPage = () => {
           </div>
         )}
     
-        {/* Responsive Pagination Controls */}
+        {/* Pagination Controls */}
         {filteredRequests.length > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 px-4 text-gray-300 gap-3">
             <div className="text-sm">

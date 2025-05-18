@@ -128,15 +128,6 @@ exports.getSuperAdmin = async (req, res) => {
   }
 };
 
-exports.getRemainingLeaveDays = async (req, res) => {
-  try {
-      const user = await User.findById(req.user.id);
-      res.json({ remainingLeaveDays: user.remainingLeaveDays });
-  } catch (err) {
-      res.status(500).json({ message: "Server error" });
-  }
-};
-
 // Create a new user (admin only)
 exports.createUser = async (req, res) => {
   try {
@@ -569,7 +560,8 @@ exports.getCurrentUser = async (req, res) => {
       lastName: currentUser.lastName,
       email: currentUser.email,
       picture: currentUser.picture,
-      role: currentUser.role
+      role: currentUser.role,
+      remainingLeaveDays: currentUser.remainingLeaveDays
     });
     
   } catch (error) {

@@ -3,18 +3,16 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
-import 'react-datepicker/dist/react-datepicker.css'; // Base styles
+import 'react-datepicker/dist/react-datepicker.css';
 import "../../../../src/datepicker.css";
-import { FaCalendarAlt, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaRobot, FaPlusCircle, FaCalendarPlus, FaEye } from 'react-icons/fa';
+import { FaCalendarAlt, FaCheckCircle, FaChevronLeft, FaChevronRight, FaRobot, FaCalendarPlus, FaEye } from 'react-icons/fa';
 import { 
   AlertDialog, 
   AlertDialogContent, 
   AlertDialogHeader, 
   AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
-  AlertDialogAction
 } from '../../../components/ui/alert-dialog';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Alert, AlertDescription } from '../../../components/ui/alert.jsx';
@@ -29,23 +27,23 @@ const EmployeeLeaveRequestPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [remainingDays, setRemainingDays] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const requestsPerPage = 5;
 
-    useEffect(() => {
-      // Initialize dates to current date whenever the create modal is opened
-      if (isCreateModalOpen) {
-        const today = new Date();
-        const formattedToday = format(today, 'yyyy-MM-dd');
-        
-        setFormData(prevData => ({
-          ...prevData,
-          startDate: formattedToday,
-          endDate: formattedToday
-        }));
-      }
-    }, [isCreateModalOpen]);
+  useEffect(() => {
+    // Initialize dates to current date whenever the create modal is opened
+    if (isCreateModalOpen) {
+      const today = new Date();
+      const formattedToday = format(today, 'yyyy-MM-dd');
+      
+      setFormData(prevData => ({
+        ...prevData,
+        startDate: formattedToday,
+        endDate: formattedToday
+      }));
+    }
+  }, [isCreateModalOpen]);
     
-
   const leaveTypes = [
     'Sick Leave',
     'Vacation Leave',
@@ -54,6 +52,7 @@ const EmployeeLeaveRequestPage = () => {
     'Emergency Leave',
     'Unpaid Leave',
   ];
+  
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
@@ -69,9 +68,9 @@ const EmployeeLeaveRequestPage = () => {
   });
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchLeaveRequests();
     fetchManager();
-    fetchRemainingDays();
   }, []);
 
   // Validate form data
@@ -95,6 +94,21 @@ const EmployeeLeaveRequestPage = () => {
     return Object.keys(errors).length === 0;
   }; 
 
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/users/me', {
+        withCredentials: true
+      });
+      
+      if (response.data) {
+        setCurrentUser(response.data);
+        setRemainingDays(response.data.remainingLeaveDays);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
   const fetchManager = async () => {
     try {
       const response = await axios.get("http://localhost:8080/api/users/manager", {
@@ -117,8 +131,6 @@ const EmployeeLeaveRequestPage = () => {
   const fetchLeaveRequests = async () => {
     setLoading(true);
     try {
-     
-
       const response = await axios.get("http://localhost:8080/api/leave-requests", {
         withCredentials: true
       });
@@ -136,32 +148,19 @@ const EmployeeLeaveRequestPage = () => {
     }
   };
 
-  const fetchRemainingDays = async () => {
-    try {
-     
-      const response = await axios.get("http://localhost:8080/api/users/remaining-leave-days", {
-        withCredentials: true
-      });
-      setRemainingDays(response.data.remainingLeaveDays);
-    } catch (err) {
-      console.error("Error fetching remaining days:", err);
-    }
-  };
-
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     try {
-     
       const response = await axios.post(
         "http://localhost:8080/api/leave-requests/create",
         formData,
         {
           headers: {
-            
             "Content-Type": "application/json",
-          },  withCredentials: true
+          },  
+          withCredentials: true
         }
       );
 
@@ -184,11 +183,13 @@ const EmployeeLeaveRequestPage = () => {
         startDate: '',
         endDate: '',
         reason: '',
-        managerId: ''
+        managerId: manager ? manager._id : ''
       });
       setFormErrors({});
+      
+      // Refresh data
+      fetchCurrentUser(); // This will update the remaining days
       fetchLeaveRequests();
-      fetchRemainingDays();
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to create leave request";
       
@@ -196,7 +197,6 @@ const EmployeeLeaveRequestPage = () => {
         icon: "error",
         title: "Error",
         text: errorMessage,
-        
         customClass: {
           popup: 'bg-[#1E1E1E] text-white border border-gray-700',
           title: 'text-white',
@@ -215,70 +215,59 @@ const EmployeeLeaveRequestPage = () => {
     }));
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+    // Get days difference between dates
+    const getDaysDifference = (startDate, endDate) => {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Include end date
+      return diffDays;
+    };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Manager Approved":
-        return "#23A49B";
-      case "Admin Approved":
-        return "#31638a";
-      case "Manager Rejected":
-      case "Admin Rejected":
-        return "#b91c1c";
-      case "Pending":
-        return "#6b7280";
-      default:
-        return "#6b7280";
-    }
-  };
-
-  // Pagination calculations
+  // Pagination Logic
   const indexOfLastRequest = currentPage * requestsPerPage;
   const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
-  const currentRequests = Array.isArray(leaveRequests) 
-    ? leaveRequests.slice(indexOfFirstRequest, indexOfLastRequest) 
-    : [];
+  const currentRequests = leaveRequests.slice(indexOfFirstRequest, indexOfLastRequest);
   const totalPages = Math.ceil(leaveRequests.length / requestsPerPage);
 
-  // Pagination controls
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
   const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="p-6 bg-[#1a1a1a] flex flex-col rounded-xl border border-[#333333] shadow-lg items-center justify-center min-h-[300px]">
-        <div className="text-[#33adb4] text-lg">Loading leave requests...</div>
-      </div>
-    );
-  }
+  // Helper function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
-  // Error state
-  if (error) {
-    return (
-      <div className="p-6 bg-[#1a1a1a] flex flex-col rounded-xl border border-[#333333] shadow-lg">
-        <Alert className="bg-red-900/20 border-red-800 text-red-400">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+  // Helper function to get status color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Manager Approved":
+        return "#23A49B"; // Deep teal
+      case "Manager Rejected":
+        return "#D98872"; // Warm terracotta
+        case "Admin Approved":
+          return "#31638a"; // Muted blue
+        case "Admin Rejected":
+          return "#b91c1c"; // Strong red
+      default:
+        return "#6b7280";
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 bg-[#1a1a1a] flex flex-col rounded-xl border border-[#333333] shadow-lg">
@@ -313,6 +302,7 @@ const EmployeeLeaveRequestPage = () => {
               <th className="py-3 px-3 text-[#33adb4] text-sm font-bold whitespace-nowrap">From</th>
               <th className="py-3 px-3 text-[#33adb4] text-sm font-bold whitespace-nowrap">To</th>
               <th className="py-3 px-3 text-[#33adb4] text-sm font-bold whitespace-nowrap">Reason</th>
+              <th className="py-3 px-3 text-[#33adb4] text-sm font-bold">Duration</th>
               <th className="py-3 px-3 text-[#33adb4] text-sm font-bold whitespace-nowrap">Reports To</th>
               <th className="py-3 px-3 text-[#33adb4] text-sm font-bold text-center whitespace-nowrap min-w-[120px]">Status</th>
               <th className="py-3 px-3 text-[#33adb4] text-sm font-bold text-center whitespace-nowrap">Actions</th>
@@ -328,7 +318,13 @@ const EmployeeLeaveRequestPage = () => {
                 <tr key={request._id} className="bg-[#2a2a2a] hover:bg-[#333] transition-colors">
                   <td className="py-4 px-3 text-sm text-gray-300">{formatDate(request.startDate)}</td>
                   <td className="py-4 px-3 text-sm text-gray-300">{formatDate(request.endDate)}</td>
-                  <td className="py-4 px-3 text-sm text-gray-300 max-w-[150px] truncate">{request.reason}</td>
+                  <td className="py-4 px-3 text-sm text-gray-300 max-w-[150px] truncate">{request.reason}</td>    
+                  <td className="py-4 px-3 text-sm text-gray-300 block sm:table-cell">
+                      <div className="flex justify-between items-center sm:block">
+                        <span className="sm:hidden text-[#33adb4] font-medium">Duration</span>
+                        <span>{getDaysDifference(request.startDate, request.endDate)} days</span>
+                      </div>
+                    </td>
                   <td className="py-4 px-3 text-sm text-gray-300 whitespace-nowrap">
                     {request.managerId?.firstName} {request.managerId?.lastName}
                   </td>
@@ -486,138 +482,147 @@ const EmployeeLeaveRequestPage = () => {
         </div>
       )}
 
-{/* Create Leave Request Modal */}
-<AlertDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-  <AlertDialogContent className="max-w-[700px] max-h-[90vh] p-0 overflow-hidden !bg-[#222] border !border-[#333] !text-white">
-    <AlertDialogHeader className="px-6 py-4 !bg-[#33adb4]">
-      <AlertDialogTitle className="text-2xl font-bold text-white">
-        Create Leave Request
-      </AlertDialogTitle>
-    </AlertDialogHeader>
-
-    <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-80px)]">
-      <div className="flex items-center justify-between bg-[#1a1a1a] p-3 rounded-md border border-[#333] shadow-sm mb-4">
-        <span className="text-sm font-medium text-gray-300">Total Remaining Leaves:</span>
-        <span className="text-2xl font-semibold text-[#33adb4]">{remainingDays !== null ? remainingDays : '--'}</span>
-      </div>
-
-      <form onSubmit={handleCreateSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Start Date
-            </label>
-            <div className="custom-datepicker-container relative">
-              <DatePicker
-                selected={formData.startDate ? new Date(formData.startDate) : null}
-                onChange={(date) => {
-                  handleInputChange({
-                    target: {
-                      name: 'startDate',
-                      value: date ? format(date, 'yyyy-MM-dd') : ''
-                    }
-                  });
-                }}
-                dateFormat="dd/MM/yyyy"
-                className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
-                  formErrors.startDate ? 'border-red-500' : 'border-[#444]'
-                }`}
-                required
-              />
-              <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
-              {formErrors.startDate && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>
-              )}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              End Date
-            </label>
-            <div className="custom-datepicker-container relative">
-              <DatePicker
-                selected={formData.endDate ? new Date(formData.endDate) : null}
-                onChange={(date) => {
-                  handleInputChange({
-                    target: {
-                      name: 'endDate',
-                      value: date ? format(date, 'yyyy-MM-dd') : ''
-                    }
-                  });
-                }}
-                dateFormat="dd/MM/yyyy"
-                className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
-                  formErrors.endDate ? 'border-red-500' : 'border-[#444]'
-                }`}
-                required
-              />
-              <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
-              {formErrors.endDate && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-              <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Reports To
-              </label>
-              {manager ? (
-                <div className="w-full p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-white">
-                  {manager.firstName} {manager.lastName}
+        {/* Create Leave Request Modal */}
+        <AlertDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <AlertDialogContent className="max-w-[700px] max-h-[90vh] p-0 overflow-hidden !bg-[#222] border !border-[#333] !text-white">
+            <AlertDialogHeader className="px-6 py-4 !bg-[#33adb4]">
+              <AlertDialogTitle className="text-2xl font-bold text-white">
+                Create Leave Request
+              </AlertDialogTitle>
+            </AlertDialogHeader>
+    
+            <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="flex items-center justify-between bg-[#1a1a1a] p-3 rounded-md border border-[#333] shadow-sm mb-4">
+                <span className="text-sm font-medium text-gray-300">Total Remaining Leaves:</span>
+                <span className="text-2xl font-semibold text-[#33adb4]">{remainingDays !== null ? remainingDays : '--'}</span>
+              </div>
+    
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Start Date
+                    </label>
+                    <div className="custom-datepicker-container relative">
+                      <div className="relative">
+                        <DatePicker
+                          selected={formData.startDate ? new Date(formData.startDate) : null}
+                          onChange={(date) => {
+                            handleInputChange({
+                              target: {
+                                name: 'startDate',
+                                value: date ? format(date, 'yyyy-MM-dd') : ''
+                              }
+                            });
+                          }}
+                          dateFormat="dd/MM/yyyy"
+                          className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
+                            formErrors.startDate ? 'border-red-500' : 'border-[#444]'
+                          }`}
+                          required
+                        />
+                        <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
+                      </div>
+                      {formErrors.startDate && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      End Date
+                    </label>
+                    <div className="custom-datepicker-container relative">
+                      <div className="relative">
+                        <DatePicker
+                          selected={formData.endDate ? new Date(formData.endDate) : null}
+                          onChange={(date) => {
+                            handleInputChange({
+                              target: {
+                                name: 'endDate',
+                                value: date ? format(date, 'yyyy-MM-dd') : ''
+                              }
+                            });
+                          }}
+                          dateFormat="dd/MM/yyyy"
+                          className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
+                            formErrors.endDate ? 'border-red-500' : 'border-[#444]'
+                          }`}
+                          required
+                        />
+                        <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
+                      </div>
+                      {formErrors.endDate && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="w-full p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-gray-400 italic">
-                  No manager assigned
+    
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Reports To
+                  </label>
+                  {manager ? (
+                    <div className="flex items-center p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-white">
+                      <input
+                        type="hidden"
+                        name="managerId"
+                        value={formData.managerId}
+                      />
+                      <span>{manager.firstName} {manager.lastName}</span>
+                    </div>
+                  ) : (
+                    <div className="p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-gray-500">
+                      Loading manager information...
+                    </div>
+                  )}
                 </div>
-              )}
+    
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Reason for Leave
+                  </label>
+                  <select
+                    name="reason"
+                    value={formData.reason}
+                    onChange={handleInputChange}
+                    className={`w-full p-2 bg-[#2a2a2a] border rounded-md text-white ${
+                      formErrors.reason ? 'border-red-500' : 'border-[#444]'
+                    }`}
+                    required
+                  >
+                    <option value="">Select Reason</option>
+                    {leaveTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.reason && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.reason}</p>
+                  )}
+                </div>
+    
+                <div className="flex justify-end space-x-3 mt-6">
+                  <AlertDialogCancel 
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-4 py-2 bg-[#333] hover:bg-[#444] text-gray-300 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </AlertDialogCancel>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#33adb4] hover:bg-[#2a8c92] text-white rounded-lg transition-colors flex items-center"
+                  >
+                    <FaCheckCircle className="mr-2" />
+                    Submit Request
+                  </button>
+                </div>
+              </form>
             </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Reason for Leave
-          </label>
-          <select
-            name="reason"
-            value={formData.reason}
-            onChange={handleInputChange}
-            className={`w-full p-2 bg-[#2a2a2a] border rounded-md text-white ${
-              formErrors.reason ? 'border-red-500' : 'border-[#444]'
-            }`}
-            required
-          >
-            <option value="">Select Reason</option>
-            {leaveTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          {formErrors.reason && (
-            <p className="text-red-500 text-sm mt-1">{formErrors.reason}</p>
-          )}
-        </div>
-
-        <div className="flex justify-end space-x-3 mt-6">
-          <AlertDialogCancel 
-            onClick={() => setIsCreateModalOpen(false)}
-            className="px-4 py-2 bg-[#333] hover:bg-[#444] text-gray-300 rounded-lg transition-colors"
-          >
-            Cancel
-          </AlertDialogCancel>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-[#33adb4] hover:bg-[#2a8c92] text-white rounded-lg transition-colors flex items-center"
-          >
-            <FaCheckCircle className="mr-2" />
-            Submit Request
-          </button>
-        </div>
-      </form>
-    </div>
-  </AlertDialogContent>
-</AlertDialog>
+          </AlertDialogContent>
+        </AlertDialog>
 
       {/* View Details Modal */}
       <AlertDialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>

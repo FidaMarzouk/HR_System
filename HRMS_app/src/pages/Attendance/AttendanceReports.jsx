@@ -44,7 +44,7 @@ const AttendanceReports = ({ onDataRefresh }) => {
     if (user) {
       fetchAttendanceData();
     }
-  }, [user]); // Only trigger on user change, not on date changes to avoid unwanted refetches
+  }, [user]);
  
   const fetchAttendanceData = async () => {
     if (!user) return;
@@ -89,7 +89,7 @@ const AttendanceReports = ({ onDataRefresh }) => {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
-      timeZone: 'Africa/Tunis' // Use Tunisia timezone instead of UTC
+      timeZone: 'Africa/Tunis' 
     });
   };
  
@@ -122,7 +122,7 @@ const AttendanceReports = ({ onDataRefresh }) => {
   
   return (
 <div className="p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6 bg-[#1a1f23]">
-      <Card className="bg-[#1e262c] border-0 !bg-[#1e262c]">
+      <Card className=" border-0 !bg-[#1e262c]">
         <CardHeader className="px-4 py-4 sm:p-6">
           {/* Centered Title */}
           <div className="w-full flex justify-center mb-4">
@@ -187,7 +187,7 @@ const AttendanceReports = ({ onDataRefresh }) => {
             </div>
           ) : (
             <div className="rounded-md border border-[#2dd4bf]/10 overflow-hidden">
-              <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="overflow-x-auto w-full">
                 <Table>
                   <TableHeader className="bg-[#1a1f23]">
                     <TableRow>
@@ -284,8 +284,8 @@ const AttendanceReports = ({ onDataRefresh }) => {
                 </Table>
               </div>
               
-              {/* Mobile scroll indicator */}
-              <div className="md:hidden text-center py-2 text-xs text-[#2dd4bf]/60">
+              {/*scroll indicator */}
+              <div className="text-center py-2 text-xs text-[#2dd4bf]/60">
                 Swipe horizontally to see all data
               </div>
             </div>

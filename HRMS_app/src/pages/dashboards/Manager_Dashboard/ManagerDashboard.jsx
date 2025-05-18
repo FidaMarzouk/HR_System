@@ -230,7 +230,7 @@ const ManagerDashboard = () => {
           lastName: response.data.lastName,
           email: response.data.email,
           picture: response.data.picture || '',
-          role: response.data.role || 'System Administrator',
+          role: response.data.role || 'Department Manager',
           id: response.data._id || ''
         });
       }
@@ -277,7 +277,7 @@ const ManagerDashboard = () => {
     };
   }, []);
 
-  // Setup socket listeners for messages - depends on user.id
+  // Setup socket listeners for messages 
   useEffect(() => {
     // Only set up message listeners if we have a valid user ID
     if (!user.id) return;
@@ -615,39 +615,42 @@ const ManagerDashboard = () => {
                   >
                     <Grid className="h-5 w-5" />
                   </button>
+
                   <button 
                     className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
                     onClick={() => setActivePage("Attendance")}
                   >
                     <Activity className="h-5 w-5" />
                   </button>
+
                   <button 
-                                      className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
-                                      onClick={() => setActivePage("Chat")}
-                                    >
-                                      <MessageCircle className="h-5 w-5" />
-                                      {unreadMessages > 0 && (
-                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                                        {unreadMessages > 9 ? '9+' : unreadMessages}
-                                      </span>
-                                    )}
+                  className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
+                  onClick={() => setActivePage("Chat")}
+                  >
+                  <MessageCircle className="h-5 w-5" />
+                  {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                 {unreadMessages > 9 ? '9+' : unreadMessages}
+                  </span>
+                  )}
                   </button>
+
                   <button 
-                                      className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
-                                      onClick={() => setActivePage("Notifications")}
-                                    >
-                                      <Bell className="h-5 w-5" />
-                                      {unreadNotifications> 0 && (
-                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                                        {unreadNotifications}
-                                      </span>
-                                    )}
+                  className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2A2A2A]/80 backdrop-blur-sm text-gray-400 hover:text-[#3baca5] transition-colors duration-300"
+                  onClick={() => setActivePage("Notifications")}
+                  >
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifications> 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  {unreadNotifications}
+                  </span>
+                  )}
                  </button>
                 </div>
                 
                 {/* User avatar - Clickable */}
                 <div 
-                  className="h-8 w-8 rounded-full bg-gradient-to-br from-[#23A49B] to-[#2D8A83] flex justify-center items-center text-white font-bold shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  className="h-10 w-10 rounded-full bg-gradient-to-br from-[#23A49B] to-[#2D8A83] flex justify-center items-center text-white font-bold shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                   onClick={() => setActivePage("Profile")}
                   role="button"
                   aria-label="View Profile"
