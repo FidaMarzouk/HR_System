@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { FaUserTie, FaChevronLeft, FaChevronRight, FaEye } from 'react-icons/fa';
+import {User } from "lucide-react";
 
 const ManagerEmployees = () => {
   const [employees, setEmployees] = useState([]);
@@ -88,13 +89,18 @@ const ManagerEmployees = () => {
           <tbody>
             {currentEmployees.map((employee) => (
               <tr key={employee._id} className="bg-[#2a2a2a] hover:bg-[#333] transition-colors">
-                {/* Profile Picture */}
-                <td className="py-4 px-3 text-sm">
-                  <img 
-                    src={employee.profilePicture ? `http://localhost:8080${employee.profilePicture}` : "/default-avatar.png"} 
-                    alt="Profile"
-                    className="h-12 w-12 object-cover rounded-full border border-[#444]"
-                  />
+                <td className="py-3 lg:py-4 px-2 lg:px-3 text-xs lg:text-sm">
+                          <div className="h-12 w-12 rounded-full border-2 border-[#33adb4] overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
+                          {employee.profilePicture ? (
+                              <img 
+                                src={`http://localhost:8080${employee.profilePicture}`} 
+                                alt="Profile"
+                                className="h-12 w-12 object-cover"
+                              />
+                            ) : (
+                              <User className="h-8 w-8 text-[#33adb4]" />
+                            )}
+                          </div>
                 </td>
                 <td className="py-4 px-3 text-sm text-gray-300">{`${employee.firstName} ${employee.lastName}`}</td>
                 <td className="py-4 px-3 text-sm text-gray-300">{employee.email}</td>
@@ -165,116 +171,111 @@ const ManagerEmployees = () => {
         </div>
       </div>
 
-      {/* Employee Details Modal */}
-      {modalOpen && selectedEmployee && (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
-          <Card className="w-full max-w-[600px] max-h-[80vh] overflow-y-auto !bg-[#222] border !border-[#333] !text-white shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-[#333] !bg-[#33adb4]">
-              <CardTitle className="text-2xl font-bold text-white">
-                Employee Profile
-              </CardTitle>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-white hover:text-gray-200 text-2xl font-bold"
-              >
-                ×
-              </button>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-              {/* Profile Picture Section */}
-              <div className="flex justify-center items-center mt-4 col-span-1 md:col-span-2">
-                {selectedEmployee.profilePicture ? (
-                  <img
-                    src={`http://localhost:8080${selectedEmployee.profilePicture}`}
-                    alt="Profile"
-                    className="w-32 h-32 rounded-full border-4 border-[#333] shadow-md"
-                  />
-                ) : (
-                  <div className="w-32 h-32 flex items-center justify-center bg-[#333] rounded-full border-4 border-[#444] shadow-md">
-                    <span className="text-gray-400 text-sm">No Image</span>
-                  </div>
-                )}
-              </div>
+{/* Employee Details Modal */}
+{modalOpen && selectedEmployee && (
+<div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50">
+  <Card className="w-full max-w-md md:max-w-xl max-h-[80vh] overflow-y-auto !bg-[#222] border !border-[#333] !text-white shadow-xl">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-[#333] !bg-[#33adb4]">
+      <CardTitle className="text-xl md:text-2xl font-bold text-white">
+        Employee Profile
+      </CardTitle>
+      <button
+        onClick={() => setModalOpen(false)}
+        className="text-white hover:text-gray-200 text-2xl font-bold"
+      >
+        ×
+      </button>
+    </CardHeader>
+    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 md:p-6">
+      {/* Profile Picture Section */}
+      <div className="flex justify-center items-center col-span-1 md:col-span-2">
+        {selectedEmployee.profilePicture ? (
+          <img
+            src={`http://localhost:8080${selectedEmployee.profilePicture}`}
+            alt="Profile"
+            className="mt-2 h-24 w-24 object-cover rounded-full border-2 border-[#33adb4] mx-auto"
+          />
+        ) : (
+          <div className="w-24 h-24 md:w-32 md:h-32 flex items-center justify-center rounded-full border-4 border-[#33adb4] shadow-md">
+            <User className="h-8 w-8 text-[#33adb4]" />
+          </div>
+        )}
+      </div>
 
-              {/* Basic Information */}
-              <div className="col-span-1 md:col-span-2">
-                <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-[#333] rounded-lg bg-[#1a1a1a]">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">First Name</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.firstName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Last Name</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.lastName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Employee ID</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee._id}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Department</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.departmentId?.name || "N/A"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Date Of Join</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{new Date(selectedEmployee.hireDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Position</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.position}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="col-span-1 md:col-span-2">
-                <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Contact Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-[#333] rounded-lg bg-[#1a1a1a]">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Phone</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Email</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.email}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div className="col-span-1 md:col-span-2">
-                <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Skills</h3>
-                <div className="flex flex-wrap gap-2 p-4 border border-[#333] rounded-lg bg-[#1a1a1a]">
-                  {selectedEmployee.skills && selectedEmployee.skills.length > 0 ? (
-                    selectedEmployee.skills.map((skill, index) => (
-                      <span 
-                        key={index}
-                        className="px-3 py-1 bg-[#2a2a2a] rounded-full text-sm border border-[#444] text-gray-300"
-                      >
-                        {skill}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400">No skills listed</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Leave Information */}
-              <div className="col-span-1 md:col-span-2">
-                <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Leave Information</h3>
-                <div className="p-4 border border-[#333] rounded-lg bg-[#1a1a1a]">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-400">Leave Days Allowed</p>
-                    <p className="border border-[#444] rounded-md p-2 bg-[#2a2a2a] text-gray-300">{selectedEmployee.leaveRequestAllowed}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Basic Information */}
+      <div className="col-span-1 md:col-span-2">
+        <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Basic Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-[#444] rounded-lg">
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">First Name</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 truncate">{selectedEmployee.firstName}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">Last Name</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 truncate">{selectedEmployee.lastName}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">Department</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 truncate">{selectedEmployee.departmentId?.name || "N/A"}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">Date Of Join</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 truncate">{new Date(selectedEmployee.hireDate).toLocaleDateString()}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">Position</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 truncate">{selectedEmployee.position}</p>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Contact Information */}
+      <div className="col-span-1 md:col-span-2">
+        <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Contact Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-[#444] rounded-lg">
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">Phone</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 truncate">{selectedEmployee.phone}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#33adb4]">Email</p>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300 break-all">{selectedEmployee.email}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Skills */}
+      <div className="col-span-1 md:col-span-2">
+        <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Skills</h3>
+        <div className="flex flex-wrap gap-2 p-4 border border-[#444] rounded-lg">
+          {selectedEmployee.skills && selectedEmployee.skills.length > 0 ? (
+            selectedEmployee.skills.map((skill, index) => (
+              <span 
+                key={index}
+                className="px-3 py-1 bg-[#33adb4]/20 rounded-full text-sm border border-[#33adb4]/30 text-gray-300"
+              >
+                {skill}
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-400">No skills listed</span>
+          )}
+        </div>
+      </div>
+
+      {/* Leave Information */}
+      <div className="col-span-1 md:col-span-2">
+        <h3 className="text-lg font-semibold mb-2 text-[#33adb4]">Leave Days Allowed</h3>
+        <div className="p-4 border border-[#444] rounded-lg">
+          <div>
+            <p className="border border-[#444] rounded-md p-2 text-gray-300">{selectedEmployee.leaveRequestAllowed}</p>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+)}
     </div>
   );
 };

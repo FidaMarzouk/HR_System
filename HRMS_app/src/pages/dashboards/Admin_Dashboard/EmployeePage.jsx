@@ -1461,8 +1461,6 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
       </div>
     )}
     </div>
-    
-
   );
 };
 export default EmployeePage;

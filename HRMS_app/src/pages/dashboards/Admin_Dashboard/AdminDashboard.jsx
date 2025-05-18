@@ -31,6 +31,7 @@ import ChatComponent from '../../TeamChat';
 import HRDashboardHomepage from '../Admin_Dashboard/HRDashboardHomepage';
 import PersonalDashboard from '../Employee_Dashboard/EmployeeDashboardHomepage';
 import { getSocket } from '../../../socketService';
+import Footer from '../../../components/ui/footer';
 
 // Circuit pattern for background
 const CircuitPattern = () => (
@@ -732,11 +733,7 @@ const AdminDashboard = () => {
             {/* ChatBot component */}
             <ChatBot />
           </div>
-          
-          {/* Footer */}
-          <div className="bg-[#1A1A1A] border-t border-gray-800 p-3 md:p-4 text-center text-xs text-gray-500">
-            <p>© {new Date().getFullYear()} Enova Robotics • All Rights Reserved</p>
-          </div>
+          <Footer />
         </div>
       </div>
     </div>
