@@ -19,9 +19,7 @@ const AttendanceManager = () => {
         console.error(title, error);
 
         // Extract meaningful error message
-        const errorMessage = error.response?.data?.message || 
-                             error.message || 
-                             'An unexpected error occurred';
+        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
 
         Swal.fire({
             icon: 'error',

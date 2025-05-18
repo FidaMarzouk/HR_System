@@ -89,7 +89,7 @@ const validateLeaveRequest = async (userId, startDate, endDate) => {
   
   // Calculate requested days
   const daysRequested = calculateDaysBetweenDates(startDate, endDate);
-  const remainingDays = user.remainingLeaveDays;
+  let remainingDays = user.remainingLeaveDays;
 
   if (remainingDays = 0) {
     throw new Error('You have no remaining leave days available.');

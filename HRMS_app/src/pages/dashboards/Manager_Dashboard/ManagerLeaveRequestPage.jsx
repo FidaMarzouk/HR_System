@@ -3,7 +3,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
-import 'react-datepicker/dist/react-datepicker.css'; // Base styles
+import 'react-datepicker/dist/react-datepicker.css';
 import "../../../../src/datepicker.css";
 import { FaCalendarAlt, FaCheckCircle, FaTimesCircle, FaChevronLeft, FaChevronRight, FaRobot, FaCalendarPlus,FaFilter,
   FaSort } from 'react-icons/fa';
@@ -32,11 +32,11 @@ const ManagerLeaveRequestPage = () => {
   const [remainingDays, setRemainingDays] = useState(null);
    const [filteredRequests, setFilteredRequests] = useState([]);
    const [admin, setAdmin] = useState([]);
-       // Filter states
-       const [sortOrder, setSortOrder] = useState("newest");
-       const [statusFilter, setStatusFilter] = useState("all");
-       const [showSortDropdown, setShowSortDropdown] = useState(false);
-       const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+
+   const [sortOrder, setSortOrder] = useState("newest");
+   const [statusFilter, setStatusFilter] = useState("all");
+   const [showSortDropdown, setShowSortDropdown] = useState(false);
+   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
     useEffect(() => {
       // Initialize dates to current date whenever the create modal is opened
@@ -165,13 +165,14 @@ const ManagerLeaveRequestPage = () => {
         title: "Success",
         text: "Leave request created successfully!",
         timer: 2000,
+        background: '#1e262c',
+        color: '#2dd4bf',
         showConfirmButton: false,
         customClass: {
-          popup: 'bg-[#1E1E1E] text-white border border-gray-700',
-          title: 'text-white',
-          content: 'text-gray-300',
-          confirmButton: 'bg-[#3baca5] hover:bg-[#2a7d78] text-white'
-        }
+          popup: 'rounded-lg shadow-xl',
+          title: 'text-[#2dd4bf]',
+          content: 'text-[#94a3b8]'
+      },
       });
 
       setIsCreateModalOpen(false);
@@ -790,8 +791,7 @@ const ManagerLeaveRequestPage = () => {
            )}
 
       {/* Create Leave Request Modal */}
-{/* Create Leave Request Modal */}
-<AlertDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+      <AlertDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
   <AlertDialogContent className="max-w-[700px] max-h-[90vh] p-0 overflow-hidden !bg-[#222] border !border-[#333] !text-white">
     <AlertDialogHeader className="px-6 py-4 !bg-[#33adb4]">
       <AlertDialogTitle className="text-2xl font-bold text-white">
@@ -812,23 +812,25 @@ const ManagerLeaveRequestPage = () => {
               Start Date
             </label>
             <div className="custom-datepicker-container relative">
-              <DatePicker
-                selected={formData.startDate ? new Date(formData.startDate) : null}
-                onChange={(date) => {
-                  handleInputChange({
-                    target: {
-                      name: 'startDate',
-                      value: date ? format(date, 'yyyy-MM-dd') : ''
-                    }
-                  });
-                }}
-                dateFormat="dd/MM/yyyy"
-                className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
-                  formErrors.startDate ? 'border-red-500' : 'border-[#444]'
-                }`}
-                required
-              />
-              <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
+              <div className="relative">
+                <DatePicker
+                  selected={formData.startDate ? new Date(formData.startDate) : null}
+                  onChange={(date) => {
+                    handleInputChange({
+                      target: {
+                        name: 'startDate',
+                        value: date ? format(date, 'yyyy-MM-dd') : ''
+                      }
+                    });
+                  }}
+                  dateFormat="dd/MM/yyyy"
+                  className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
+                    formErrors.startDate ? 'border-red-500' : 'border-[#444]'
+                  }`}
+                  required
+                />
+                <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
+              </div>
               {formErrors.startDate && (
                 <p className="text-red-500 text-sm mt-1">{formErrors.startDate}</p>
               )}
@@ -839,23 +841,25 @@ const ManagerLeaveRequestPage = () => {
               End Date
             </label>
             <div className="custom-datepicker-container relative">
-              <DatePicker
-                selected={formData.endDate ? new Date(formData.endDate) : null}
-                onChange={(date) => {
-                  handleInputChange({
-                    target: {
-                      name: 'endDate',
-                      value: date ? format(date, 'yyyy-MM-dd') : ''
-                    }
-                  });
-                }}
-                dateFormat="dd/MM/yyyy"
-                className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
-                  formErrors.endDate ? 'border-red-500' : 'border-[#444]'
-                }`}
-                required
-              />
-              <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
+              <div className="relative">
+                <DatePicker
+                  selected={formData.endDate ? new Date(formData.endDate) : null}
+                  onChange={(date) => {
+                    handleInputChange({
+                      target: {
+                        name: 'endDate',
+                        value: date ? format(date, 'yyyy-MM-dd') : ''
+                      }
+                    });
+                  }}
+                  dateFormat="dd/MM/yyyy"
+                  className={`w-full p-2 pl-9 bg-[#2a2a2a] border rounded-md text-white ${
+                    formErrors.endDate ? 'border-red-500' : 'border-[#444]'
+                  }`}
+                  required
+                />
+                <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-[#33adb4]" />
+              </div>
               {formErrors.endDate && (
                 <p className="text-red-500 text-sm mt-1">{formErrors.endDate}</p>
               )}
@@ -863,25 +867,25 @@ const ManagerLeaveRequestPage = () => {
           </div>
         </div>
 
-              <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Reports To
-              </label>
-              {admin ? (
-                <div className="flex items-center p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-white">
-                  <input
-                    type="hidden"
-                    name="adminId"
-                    value={formData.adminId}
-                  />
-                  <span>{admin.firstName} {admin.lastName}</span>
-                </div>
-              ) : (
-                <div className="p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-gray-500">
-                  Loading admin information...
-                </div>
-              )}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Reports To
+          </label>
+          {admin ? (
+            <div className="flex items-center p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-white">
+              <input
+                type="hidden"
+                name="adminId"
+                value={formData.adminId}
+              />
+              <span>{admin.firstName} {admin.lastName}</span>
             </div>
+          ) : (
+            <div className="p-2 bg-[#2a2a2a] border border-[#444] rounded-md text-gray-500">
+              Loading admin information...
+            </div>
+          )}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
