@@ -497,12 +497,13 @@ const AttendanceManager = () => {
                     )}
                 </CardContent>
             </Card>
-            <AttendanceReports onDataRefresh={() => {
-  if (currentUser?.id) {
-    fetchTodayAttendance(currentUser.id);
-    fetchAllTodaySessions(currentUser.id);
-  }
-}} />
+                <AttendanceReports onDataRefresh={() => {
+            if (currentUser?.id) {
+                fetchTodayAttendance(currentUser.id);
+                fetchAllTodaySessions(currentUser.id);
+            }
+            }} />
+
         </div>
     );
 };

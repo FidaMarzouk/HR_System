@@ -121,8 +121,8 @@ const AttendanceReports = ({ onDataRefresh }) => {
   };
   
   return (
-<div className="p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6 bg-[#1a1f23]">
-      <Card className=" border-0 !bg-[#1e262c]">
+    <div className="space-y-4 sm:space-y-6 bg-[#1a1f23] max-w-full">
+      <Card className="border-0 !bg-[#1e262c] w-full">
         <CardHeader className="px-4 py-4 sm:p-6">
           {/* Centered Title */}
           <div className="w-full flex justify-center mb-4">
@@ -133,19 +133,19 @@ const AttendanceReports = ({ onDataRefresh }) => {
           <div className="flex flex-col md:flex-row items-center justify-center gap-3">
             {/* Date Range Selectors */}
             <div className="flex flex-row items-center justify-center gap-2 w-full md:w-auto">
-            <span className="text-white text-sm sm:text-sm px-1">From</span>
+              <span className="text-white text-sm sm:text-sm px-1">From</span>
               <CustomDatePicker
                 selectedDate={startDate}
                 onChange={setStartDate}
                 className="w-[120px] md:w-[140px]" 
               />
-
+  
               <span className="text-white text-sm sm:text-sm px-1">to</span>
-
+  
               <CustomDatePicker
                 selectedDate={endDate}
                 onChange={setEndDate}
-                 className="w-[120px] md:w-[140px]" 
+                className="w-[120px] md:w-[140px]" 
               />
             </div>
   
@@ -186,9 +186,10 @@ const AttendanceReports = ({ onDataRefresh }) => {
               <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-[#2dd4bf]"></div>
             </div>
           ) : (
-            <div className="rounded-md border border-[#2dd4bf]/10 overflow-hidden">
-              <div className="overflow-x-auto w-full">
-                <Table>
+            <div className="rounded-md border border-[#2dd4bf]/10">
+              {/* FIXED: Table wrapper with overflow properties and min-width to ensure full content is scrollable */}
+              <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-[#2dd4bf]/20 scrollbar-track-[#1a1f23]/40">
+                <Table className="w-full" style={{ minWidth: '1000px' }}>
                   <TableHeader className="bg-[#1a1f23]">
                     <TableRow>
                       {(userRole === 'admin' || userRole === 'manager' || userRole === 'superAdmin') && (
@@ -282,11 +283,6 @@ const AttendanceReports = ({ onDataRefresh }) => {
                     )}
                   </TableBody>
                 </Table>
-              </div>
-              
-              {/*scroll indicator */}
-              <div className="text-center py-2 text-xs text-[#2dd4bf]/60">
-                Swipe horizontally to see all data
               </div>
             </div>
           )}
