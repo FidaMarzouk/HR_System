@@ -55,7 +55,7 @@ const CalendarManager = () => {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState("month"); // month, week, day, list
+  const [viewMode, setViewMode] = useState("month"); 
   const [isLoading, setIsLoading] = useState(true);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -120,7 +120,7 @@ const CalendarManager = () => {
     const fetchResourceTypes = async () => {
       setLoadingResourceTypes(true);
       try {
-        // We'll get distinct resource types from the backend
+        //get distinct resource types from the backend
         const response = await axios.get(`${API_BASE_URL}/types`, {
           withCredentials: true
         });
@@ -140,7 +140,6 @@ const CalendarManager = () => {
       const fetchResources = async () => {
         setLoadingResources(true);
         try {
-          // Make sure we have valid start and end times
           const startTime = eventForm.startDateTime || format(startDate, "yyyy-MM-dd'T'HH:mm");
           const endTime = eventForm.endDateTime || format(endDate, "yyyy-MM-dd'T'HH:mm");
           
@@ -245,8 +244,6 @@ const CalendarManager = () => {
       const response = await axios.get("http://localhost:8080/api/calendar", {
         withCredentials: true
       });
-  
-      // Filter users with role 'employee' or 'manager'
       const filteredUsers = response.data.users;
       setUsersList(filteredUsers);
     } catch (error) {
@@ -265,8 +262,8 @@ const CalendarManager = () => {
     setIsEditMode(true);
     
     const now = new Date();
-    const endTime = new Date(now); // Create a new date object for end time
-    endTime.setMinutes(now.getMinutes() + 30);
+    const endTime = new Date(now);
+    endTime.setMinutes(now.getMinutes() + 30); 
     
     const formattedDate = format(now, "yyyy-MM-dd'T'HH:mm");
     const formattedEndDate = format(endTime, "yyyy-MM-dd'T'HH:mm");
@@ -433,7 +430,7 @@ const CalendarManager = () => {
       let errorMessage = "Failed to save event.";
       let errorStatus = error.response?.data?.status || "";
       
-      // First, check for specific status codes
+      // check for specific status codes
       if (errorStatus) {
         switch (errorStatus) {
           case "invalid_dates":
@@ -442,7 +439,7 @@ const CalendarManager = () => {
           case "duration_too_short":
             errorMessage = "Event must be at least 10 minutes long.";
             break;
-          case "mmissing_meeting_description":
+          case "missing_meeting_description":
             errorMessage = "Description is required for meetings.";
             break;
           case "missing_location":
@@ -457,23 +454,29 @@ const CalendarManager = () => {
           case "missing_resource":
             errorMessage = "Resource is required for resource reservations.";
             break;
+            case "invalid_update":
+              errorMessage = "The event type cannot be changed after creation.";
+              break;
           default:
             if (error.response?.data?.message) {
               errorMessage = error.response.data.message;
             }
         }
       } else if (error.response?.data?.message) {
-        // If no status code but we have a message
         errorMessage = error.response.data.message;
       }
     
-      // Show error message
       Swal.fire({
-        title: "Error!",
-        text: errorMessage,
         icon: "error",
-        background: "#1E1E1E",
-        color: "#fff"
+        title: "Error",
+        text: errorMessage,
+        timer: 3000,
+        customClass: {
+          popup: 'bg-[#1E1E1E] text-white border border-gray-700',
+          title: 'text-white',
+          content: 'text-gray-300',
+          confirmButton: 'bg-[#3baca5] hover:bg-[#2a7d78] text-white'
+        }
       });
     }
   };
@@ -496,20 +499,8 @@ const handleDeleteEvent = async () => {
     });
     
     if (result.isConfirmed) {
-      // Get user ID from the state instead of localStorage
+      // Get user ID from the state
       const userId = user?.id;
-      
-      if (!userId) {
-        Swal.fire({
-          title: "Error!",
-          text: "User authentication error. Please try logging in again.",
-          icon: "error",
-          background: "#1E1E1E",
-          color: "#fff"
-        });
-        return;
-      }
-      
       await axios.delete(`${API_BASE_URL}/event/${selectedEvent._id}/${userId}`, {
         withCredentials: true
       });
@@ -527,26 +518,8 @@ const handleDeleteEvent = async () => {
     }
   } catch (error) {
     console.error("Error deleting event:", error);
-    
-    let errorMessage = "Failed to delete event.";
-    if (error.response?.data?.status === "unauthorized") {
-      errorMessage = "You are not authorized to delete this event.";
-    } else if (error.response?.data?.status === "not_found") {
-      errorMessage = "Event not found.";
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    }
-    
-    Swal.fire({
-      title: "Error!",
-      text: errorMessage,
-      icon: "error",
-      background: "#1E1E1E",
-      color: "#fff"
-    });
   }
 };
-
 
 const handleAdminReview = async (status) => {
   try {
@@ -569,23 +542,6 @@ const handleAdminReview = async (status) => {
     fetchEvents();
   } catch (error) {
     console.error("Error reviewing event:", error);
-    
-    let errorMessage = "Failed to review event.";
-    if (error.response?.data?.status === "unauthorized") {
-      errorMessage = "You are not authorized to review this event.";
-    } else if (error.response?.data?.status === "invalid_status") {
-      errorMessage = "Invalid status provided.";
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    }
-    
-    Swal.fire({
-      title: "Error!",
-      text: errorMessage,
-      icon: "error",
-      background: "#1E1E1E",
-      color: "#fff"
-    });
   }
 };
 
@@ -595,18 +551,6 @@ const handleUpdateAttendeeStatus = async (status) => {
     
     // Get user ID from the state 
     const userId = user?.id;
-    
-    if (!userId) {
-      Swal.fire({
-        title: "Error!",
-        text: "User authentication error. Please try logging in again.",
-        icon: "error",
-        background: "#1E1E1E",
-        color: "#fff"
-      });
-      return;
-    }
-    
     await axios.put(`${API_BASE_URL}/event/${selectedEvent._id}/attendee/${userId}`, {
       status
     }, {
@@ -625,27 +569,9 @@ const handleUpdateAttendeeStatus = async (status) => {
     fetchEvents();
   } catch (error) {
     console.error("Error updating attendee status:", error);
-    
-    let errorMessage = "Failed to update response.";
-    if (error.response?.data?.status === "invalid_status") {
-      errorMessage = "Invalid status provided.";
-    } else if (error.response?.data?.status === "not_found") {
-      errorMessage = "Event not found or you are not an attendee.";
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    }
-    
-    Swal.fire({
-      title: "Error!",
-      text: errorMessage,
-      icon: "error",
-      background: "#1E1E1E",
-      color: "#fff"
-    });
   }
 };
   
-
   const handlePrevMonth = () => {
     if ((viewMode === "month")||(viewMode === "list")){
       setCurrentDate(subMonths(currentDate, 1));
@@ -1169,7 +1095,6 @@ const handleUpdateAttendeeStatus = async (status) => {
                     <div>
                     {selectedEvent.eventType === "resourceReservation" && (
                     <p className="text-gray-400 flex items-center">
-                      {/* Try both resource.type and resourceType */}
                       {resourceTypeIcons[selectedEvent.resource?.type || selectedEvent.resourceType] || <Wrench className="h-4 w-4 mr-2" />}
                       <span className="ml-2 capitalize">
                         {selectedEvent.resource?.name || selectedEvent.resourceType} 
@@ -1393,65 +1318,65 @@ const handleUpdateAttendeeStatus = async (status) => {
                     )}
                     
                     {eventForm.eventType === "resourceReservation" && (
-          <>
-            <div>
-              <label className="text-sm font-medium text-gray-400 block mb-2">
-                Resource Type
-              </label>
-              {loadingResourceTypes ? (
-                <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
-                  <span className="text-gray-500">Loading resource types...</span>
-                </div>
-              ) : (
-                <select
-                  value={eventForm.resourceType}
-                  onChange={(e) => setEventForm({ ...eventForm, resourceType: e.target.value, resourceId: '' })}
-                  className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
-                >
-                  <option value="">Select Resource Type</option>
-                  {resourceTypes.map(type => (
-                    <option key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+                    <>
+                      <div>
+                        <label className="text-sm font-medium text-gray-400 block mb-2">
+                          Resource Type
+                        </label>
+                        {loadingResourceTypes ? (
+                          <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
+                            <span className="text-gray-500">Loading resource types...</span>
+                          </div>
+                        ) : (
+                          <select
+                            value={eventForm.resourceType}
+                            onChange={(e) => setEventForm({ ...eventForm, resourceType: e.target.value, resourceId: '' })}
+                            className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
+                          >
+                            <option value="">Select Resource Type</option>
+                            {resourceTypes.map(type => (
+                              <option key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-400 block mb-2">Resource</label>
-              <div className="relative">
-                {loadingResources ? (
-                  <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
-                    <span className="text-gray-500">Loading resources...</span>
-                  </div>
-                ) : (
-                  <select
-                    value={eventForm.resourceId}
-                    onChange={(e) => setEventForm({ ...eventForm, resourceId: e.target.value })}
-                    className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
-                    disabled={!eventForm.resourceType || resourcesList.length === 0}
-                  >
-                    <option value="">Select a resource</option>
-                    {resourcesList.map(resource => (
-                      <option 
-                        key={resource._id} 
-                        value={resource._id}
-                        disabled={resource.status === 'unavailable' && !resource.isCurrentResource}
-                      >
-                        {resource.name} {resource.identifier ? `(${resource.identifier})` : ''} 
-                        {resource.isCurrentResource ? " (Currently Selected)" : ""}
-                        {resource.status === 'unavailable' && !resource.isCurrentResource ? " (Unavailable)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {eventForm.resourceType && resourcesList.length === 0 && !loadingResources && (
-                  <p className="text-sm text-amber-500 mt-1">No available resources found for this time slot</p>
-                )}
-              </div>
-            </div>
-          </>
+                      <div>
+                        <label className="text-sm font-medium text-gray-400 block mb-2">Resource</label>
+                        <div className="relative">
+                          {loadingResources ? (
+                            <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
+                              <span className="text-gray-500">Loading resources...</span>
+                            </div>
+                          ) : (
+                            <select
+                              value={eventForm.resourceId}
+                              onChange={(e) => setEventForm({ ...eventForm, resourceId: e.target.value })}
+                              className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
+                              disabled={!eventForm.resourceType || resourcesList.length === 0}
+                            >
+                              <option value="">Select a resource</option>
+                              {resourcesList.map(resource => (
+                                <option 
+                                  key={resource._id} 
+                                  value={resource._id}
+                                  disabled={resource.status === 'unavailable' && !resource.isCurrentResource}
+                                >
+                                  {resource.name} {resource.identifier ? `(${resource.identifier})` : ''} 
+                                  {resource.isCurrentResource ? " (Currently Selected)" : ""}
+                                  {resource.status === 'unavailable' && !resource.isCurrentResource ? " (Unavailable)" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {eventForm.resourceType && resourcesList.length === 0 && !loadingResources && (
+                            <p className="text-sm text-amber-500 mt-1">No available resources found for this time slot</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
                      )}
                     
                     {(eventForm.eventType === "meeting") && (

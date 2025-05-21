@@ -9,20 +9,8 @@ const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const chatbotRef = useRef(null);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Initial greeting
   useEffect(() => {
@@ -48,22 +36,6 @@ const ChatBot = () => {
       inputRef.current.focus();
     }
   }, [conversation, isOpen, isMinimized]);
-
-  // Handle clicks outside chatbot to close on mobile
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (chatbotRef.current && !chatbotRef.current.contains(event.target) && isMobile && isOpen) {
-        // Check if the click is not on the toggle button (which has its own handler)
-        const toggleButton = document.getElementById('chatbot-toggle');
-        if (!toggleButton.contains(event.target)) {
-          setIsOpen(false);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobile, isOpen]);
 
   // Load conversation history
   useEffect(() => {
@@ -120,7 +92,7 @@ const ChatBot = () => {
       const response = await fetch("http://localhost:8080/api/chatbot/message", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-       credentials: "include",
+        credentials: "include",
         body: JSON.stringify({ message: userMessage.text })
       });
       
@@ -209,19 +181,6 @@ const ChatBot = () => {
     }
   };
 
-  // Calculate chatbot position and size based on screen size
-  const getChatbotStyles = () => {
-    if (isMobile) {
-      return isMinimized 
-        ? "fixed z-50 bottom-24 right-4 left-4 h-16 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 border border-[#23A49B]/30"
-        : "fixed z-50 bottom-0 left-0 right-0 h-[90vh] max-h-[600px] bg-gray-900 rounded-t-2xl shadow-2xl overflow-hidden transition-all duration-300 border-t border-[#23A49B]/30";
-    } else {
-      return `fixed z-50 bottom-24 right-6 w-80 md:w-96 bg-gray-900 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 border border-[#23A49B]/30 backdrop-blur-xl ${
-        isMinimized ? "h-16" : "h-[600px]"
-      }`;
-    }
-  };
-
   return (
     <>
       {/* Chatbot toggle button */}
@@ -235,10 +194,17 @@ const ChatBot = () => {
 
       {/* Chatbot interface */}
       {isOpen && (
-        <div 
-          ref={chatbotRef}
-          className={getChatbotStyles()}
-        >
+        <div
+        className={`
+          fixed z-50 bg-gray-900 shadow-2xl overflow-hidden transition-all duration-300 border-[#23A49B]/30 backdrop-blur-xl
+          inset-x-0 bottom-0 rounded-t-2xl border-t
+          ${isMinimized ? 'h-16' : 'h-5/6 max-h-screen'}
+
+          md:inset-x-auto md:right-6 md:bottom-24 md:rounded-2xl md:border
+          md:${isMinimized ? 'h-16' : 'h-auto'}
+          w-full md:max-w-md
+        `}
+      >
           {/* Header */}
           <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 flex items-center justify-between border-b border-[#23A49B]/30">
             <div className="flex items-center space-x-2">
@@ -254,8 +220,9 @@ const ChatBot = () => {
               >
                 {isMinimized ? 
                   <Plus className="w-4 h-4 text-gray-400" /> : 
-                  (isMobile ? <Minimize className="w-4 h-4 text-gray-400" /> : <Info className="w-4 h-4 text-gray-400" />)
+                  <Minimize className="w-4 h-4 text-gray-400 md:hidden" />
                 }
+                {!isMinimized && <Minimize className="w-4 h-4 text-gray-400" />}
               </button>
               <button
                 onClick={toggleChatbot}
@@ -268,14 +235,8 @@ const ChatBot = () => {
 
           {!isMinimized && (
             <>
-              {/* Message container - with explicitly styled scrollbar */}
-              <div 
-                className={`p-4 ${isMobile ? 'h-[calc(100%-12rem)]' : 'h-[calc(100%-12rem)]'} overflow-y-auto bg-gray-800/60 space-y-4`}
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#23A49B #2D3748'
-                }}
-              >
+              {/* Message container */}
+              <div className="p-4 h-3/4 overflow-y-auto bg-gray-800/60 space-y-4">
                 {conversation.map((msg, index) => (
                   <div
                     key={index}
@@ -284,7 +245,7 @@ const ChatBot = () => {
                     }`}
                   >
                     <div
-                      className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg ${
+                      className={`max-w-[85%] md:max-w-[75%] p-3 rounded-lg ${
                         msg.sender === "user"
                           ? "bg-[#23A49B] text-white rounded-tr-none"
                           : "bg-gray-700 text-gray-100 rounded-tl-none"
@@ -341,14 +302,8 @@ const ChatBot = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick prompts - with explicitly styled scrollbar */}
-              <div 
-                className="p-2 bg-gray-900 border-t border-[#23A49B]/20 overflow-x-auto"
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#23A49B #2D3748'
-                }}
-              >
+              {/* Quick prompts - with scrollbar */}
+              <div className="p-2 bg-gray-900 border-t border-[#23A49B]/20 overflow-x-auto">
                 <div className="flex space-x-2 pb-1">
                   {quickPrompts.map((prompt, index) => (
                     <button
@@ -387,11 +342,8 @@ const ChatBot = () => {
                   </button>
                 </div>
                 <div className="mt-2 text-xs text-gray-500 text-center">
-                  {isMobile ? (
-                    <span>ENOVA HRMS | <span className="text-[#23A49B]">AI</span></span>
-                  ) : (
-                    <span>Powered by ENOVA HRMS | <span className="text-[#23A49B]">AI Assistant</span></span>
-                  )}
+                  <span className="md:hidden">ENOVA HRMS | <span className="text-[#23A49B]">AI</span></span>
+                  <span className="hidden md:inline">Powered by ENOVA HRMS | <span className="text-[#23A49B]">AI Assistant</span></span>
                 </div>
               </div>
             </>

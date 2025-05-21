@@ -8,7 +8,7 @@ router.get('/users', authMiddleware, async (req, res) => {
   try {
     const User = require('../Models/User');
     const users = await User.find({ _id: { $ne: req.user.id } })
-      .select('firstName lastName picture role');
+      .select('firstName lastName role');
     
     res.json(users);
   } catch (error) {

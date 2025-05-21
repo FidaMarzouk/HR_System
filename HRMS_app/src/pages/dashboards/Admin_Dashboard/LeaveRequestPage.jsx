@@ -277,6 +277,7 @@ const LeaveRequestPage = () => {
       Swal.fire({
         icon: "error",
         title: "Error",
+        timer: 3000,
         text: errorMessage,
         customClass: {
           popup: 'bg-[#1E1E1E] text-white border border-gray-700',
