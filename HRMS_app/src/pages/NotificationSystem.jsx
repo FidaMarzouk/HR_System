@@ -11,7 +11,7 @@ const NotificationPage = () => {
   const [filter, setFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const limit = 10; // Number of notifications per page
+  const limit = 10; 
   const socketRef = useRef(null);
 
   // Initialize socket connection and handle notifications
@@ -408,7 +408,7 @@ const getNotificationIcon = (type) => {
       
       {/* Load more button */}
       {hasMore && (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex justify-center"> 
           <button 
             onClick={loadMoreNotifications}
             disabled={loadingMore}

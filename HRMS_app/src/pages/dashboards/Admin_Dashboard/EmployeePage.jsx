@@ -652,7 +652,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
   };
 
   return (
-    <div className="p-3 bg-[#1a1a1a] flex flex-col rounded-xl border border-[#333333] shadow-lg">
+    <div className="p-3 bg-[#1a1a1a] flex flex-col rounded-xl border border-[#333333] shadow-lg ">
       {/* Success Message */}
       {successMessage && (
         <div className="p-4 bg-[#23A49B] text-white rounded-md mb-4 border-l-4 border-[#33adb4] animate-fadeIn flex items-center">
@@ -733,7 +733,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
 
           {/* Desktop/Tablet View */}
           <div className="hidden md:block">
-            <div className="w-full overflow-x-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333]">
+            <div className="w-full overflow-y-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333] scrollbar-thin scrollbar-track-gray-700 scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
               <table className="table-auto w-full text-left border-separate border-spacing-y-1">
                 <thead className="bg-[#2c2c2c] sticky top-0">
                   <tr>
@@ -962,7 +962,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
           </div>
 
           {/* Department Table */}
-          <div className="w-full overflow-x-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333]">
+          <div className="w-full overflow-x-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333] scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
             <table className="table-auto w-full text-left border-separate border-spacing-y-1">
               <thead className="bg-[#2c2c2c] sticky top-0">
                 <tr>
@@ -1122,7 +1122,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
     {(isEditing || isCreating) && (
       <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-2 sm:p-4">
         <form 
-        className="bg-[#2a2a2a] p-3 sm:p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] custom-scrollbar"
+        className="bg-[#2a2a2a] p-3 sm:p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark"
           onSubmit={handleFormSubmit}
         >
           {errorMessage && (
@@ -1342,7 +1342,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
     {/* Department Form*/}
     {(isCreatingDept || isEditingDept) && (
       <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-4">
-        <div className="bg-[#2a2a2a] p-4 sm:p-6 rounded-lg shadow-lg border border-[#444] w-full max-w-[600px] max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="bg-[#2a2a2a] p-4 sm:p-6 rounded-lg shadow-lg border border-[#444] w-full max-w-[600px] max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
           <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 text-[#33adb4]">
             {isEditingDept ? "Edit Department" : "Add Department"}
           </h2>

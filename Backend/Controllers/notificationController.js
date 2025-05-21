@@ -5,22 +5,40 @@ exports.getUserNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     
-    // Find notifications for this specific user or for their role
+    // Get total count for pagination info
+    const totalCount = await Notification.countDocuments({
+      $or: [
+        { recipient: userId },
+        { recipientRole: userRole }
+      ]
+    });
+    
+    // Find notifications with pagination
     const notifications = await Notification.find({
       $or: [
         { recipient: userId },
         { recipientRole: userRole }
       ]
-    }).sort({ createdAt: -1 }).limit(50);
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
     
-    res.status(200).json(notifications);
+    res.status(200).json({
+      notifications,
+      totalCount,
+      page,
+      totalPages: Math.ceil(totalCount / limit)
+    });
   } catch (error) {
     console.error('Error fetching notifications:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 // Mark a notification as read
 exports.markAsRead = async (req, res) => {
   try {

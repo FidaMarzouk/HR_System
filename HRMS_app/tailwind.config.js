@@ -1,4 +1,5 @@
 const withMT = require("@material-tailwind/react/utils/withMT");
+
 module.exports = withMT({
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
@@ -7,8 +8,8 @@ module.exports = withMT({
       colors: {
         'custom-blue': '#31638a',
         'teal': {
-          DEFAULT: '#3baca5',
-          dark: '#2d8a83',
+          DEFAULT: '#23A49B', // Changed to match the chatbot color
+          dark: '#1b8c84',
         }
       },
       keyframes: {
@@ -50,6 +51,21 @@ module.exports = withMT({
     },
   },
   plugins: [
-    require('tailwind-scrollbar'),
+    require('tailwind-scrollbar')({
+      nocompatible: true, 
+      scrollbar: {
+        width: '8px', 
+        height: '8px', 
+        track: {
+          background: '#2D3748', 
+          borderRadius: '4px',
+        },
+        thumb: {
+          background: '#23A49B',
+          borderRadius: '4px',
+          hoverBackground: '#1b8c84', 
+        }
+      }
+    }),
   ],
 });

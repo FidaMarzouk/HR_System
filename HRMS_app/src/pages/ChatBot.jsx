@@ -236,7 +236,7 @@ const ChatBot = () => {
           {!isMinimized && (
             <>
               {/* Message container */}
-              <div className="p-4 h-3/4 overflow-y-auto bg-gray-800/60 space-y-4">
+              <div className="p-4 h-3/4 overflow-y-auto bg-gray-800/60 space-y-4 scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                 {conversation.map((msg, index) => (
                   <div
                     key={index}
@@ -303,7 +303,7 @@ const ChatBot = () => {
               </div>
 
               {/* Quick prompts - with scrollbar */}
-              <div className="p-2 bg-gray-900 border-t border-[#23A49B]/20 overflow-x-auto">
+              <div className="p-2 bg-gray-900 border-t border-[#23A49B]/20 overflow-x-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                 <div className="flex space-x-2 pb-1">
                   {quickPrompts.map((prompt, index) => (
                     <button
@@ -326,7 +326,7 @@ const ChatBot = () => {
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="Type your message..."
-                    className="flex-1 bg-gray-800 text-gray-200 rounded-lg p-3 resize-none h-10 max-h-24 focus:outline-none focus:ring-1 focus:ring-[#23A49B] placeholder-gray-500"
+                    className="flex-1 bg-gray-800 text-gray-200 rounded-lg p-3 resize-none h-10 max-h-24 focus:outline-none focus:ring-1 focus:ring-[#23A49B] placeholder-gray-500 scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal"
                     style={{ minHeight: "40px" }}
                   />
                   <button
@@ -350,26 +350,6 @@ const ChatBot = () => {
           )}
         </div>
       )}
-
-      {/* Add global scrollbar styling */}
-      <style jsx="true">{`
-        /* Webkit browsers like Chrome/Safari */
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #2D3748;
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #23A49B;
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: #1b8c84;
-        }
-      `}</style>
     </>
   );
 };
