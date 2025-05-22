@@ -157,14 +157,26 @@ exports.createUser = async (req, res) => {
       personalEmail,
     } = req.body;
 
+    // Collect all validation errors upfront
+    const validationErrors = [];
+
     // Check for existing user - this query needs to happen before proceeding
     const existingUser = await User.findOne({ email }, { _id: 1 });
     if (existingUser) {
-      return res.status(400).json({ message: "User with this email already exists" });
+      validationErrors.push({ msg: "User with this email already exists" });
     }
+    
     const existingPhone = await User.findOne({ phone }, { _id: 1 });
     if (existingPhone) {
-      return res.status(400).json({ message: "User with this phone number already exists" });
+      validationErrors.push({ msg: "User with this phone number already exists" });
+    }
+
+    // If we have validation errors, return them all at once
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        message: "Validation failed",
+        errors: validationErrors
+      });
     }
 
     // Save original password for email
@@ -180,7 +192,7 @@ exports.createUser = async (req, res) => {
       position,
       departmentId,
       hireDate,
-      salary: salary || 0, // Default to 0 if not provided (validator will catch this if required)
+      salary: salary || 0,
       skills: typeof skills === "string" ? skills.split(",").map(skill => skill.trim()) : skills || [],
       password: await bcrypt.hash(originalPassword, 10),
       role,
@@ -189,8 +201,6 @@ exports.createUser = async (req, res) => {
       profilePicture: req.file ? `/uploads/${req.file.filename}` : "",
       personalEmail,
     };
- 
-
 
     // Determine if we need managerId and verify department in parallel
     let departmentPromise;
@@ -212,7 +222,8 @@ exports.createUser = async (req, res) => {
         }
       } else {
         return res.status(400).json({
-          message: "The selected department does not have a manager assigned. Please assign a manager to the department first."
+          message: "The selected department does not have a manager assigned. Please assign a manager to the department first.",
+          errors: [{ msg: "The selected department does not have a manager assigned. Please assign a manager to the department first." }]
         });
       }
     }
@@ -268,11 +279,30 @@ exports.createUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Error creating user:", err);
+    
+    // Handle MongoDB validation errors
     if (err.name === 'ValidationError') {
-      const errorMessages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json({ message: errorMessages.join(', ') });
+      const errorMessages = Object.values(err.errors).map(e => ({ msg: e.message }));
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: errorMessages
+      });
     }
-    return res.status(500).json({ message: "Server error", error: err.message });
+    
+    // Handle duplicate key errors
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: [{ msg: `A user with this ${field} already exists` }]
+      });
+    }
+    
+    return res.status(500).json({ 
+      message: "Server error", 
+      error: err.message,
+      errors: [{ msg: "Internal server error occurred" }]
+    });
   }
 };
 
@@ -326,6 +356,9 @@ exports.updateUser = async (req, res) => {
     let updateData = { ...req.body };
     const user = await User.findById(id);
     
+    // Collect all validation errors upfront
+    const validationErrors = [];
+    
     // Track what credentials have changed for email notification
     const changedCredentials = [];
     let originalPassword = null;
@@ -334,36 +367,53 @@ exports.updateUser = async (req, res) => {
     if (updateData.email && updateData.email !== user.email) {
       const existingUser = await User.findOne({ email: updateData.email });
       if (existingUser) {
-        return res.status(400).json({ message: 'User with this email already exists' });
+        validationErrors.push({ msg: 'User with this email already exists' });
+      } else {
+        changedCredentials.push('email');
       }
-      changedCredentials.push('email');
     }
+    
+    // Phone validation - only if it's being changed
     if (updateData.phone && updateData.phone !== user.phone) {
       const existingPhone = await User.findOne({ 
         phone: updateData.phone,
         _id: { $ne: id } // Exclude current user
       });
       if (existingPhone) {
-        return res.status(400).json({ message: 'User with this phone number already exists' });
+        validationErrors.push({ msg: 'User with this phone number already exists' });
       }
     }
-if (updateData.hireDate && new Date(updateData.hireDate).toISOString() !== new Date(user.hireDate).toISOString()) {
-  // Calculate what the leave days would be with the new hire date
-  const newAccrualInfo = await leaveHelper.calculateCurrentLeaveBalance(id, LeaveRequest, User, updateData.hireDate);
-  const daysAlreadyTaken = user.leaveRequestAllowed - user.remainingLeaveDays;
-  
-  // Logic to handle the case where new accrual is less than days already taken
-  if (newAccrualInfo.totalAccruedDays < daysAlreadyTaken) {
-  
-    return res.status(400).json({ 
-      message: `Cannot update hire date. User has already used ${daysAlreadyTaken} days, but the new hire date would only allow ${newAccrualInfo.totalAccruedDays} days.`
-    });
-  } else {
-    // Normal case: user still has enough days with the new hire date
-    updateData.leaveRequestAllowed = newAccrualInfo.totalAccruedDays;
-    updateData.remainingLeaveDays = newAccrualInfo.totalAccruedDays - daysAlreadyTaken;
-  }
-}
+
+    // Hire date validation
+    if (updateData.hireDate && new Date(updateData.hireDate).toISOString() !== new Date(user.hireDate).toISOString()) {
+      try {
+        // Calculate what the leave days would be with the new hire date
+        const newAccrualInfo = await leaveHelper.calculateCurrentLeaveBalance(id, LeaveRequest, User, updateData.hireDate);
+        const daysAlreadyTaken = user.leaveRequestAllowed - user.remainingLeaveDays;
+        
+        // Logic to handle the case where new accrual is less than days already taken
+        if (newAccrualInfo.totalAccruedDays < daysAlreadyTaken) {
+          validationErrors.push({ 
+            msg: `Cannot update hire date. User has already used ${daysAlreadyTaken} days, but the new hire date would only allow ${newAccrualInfo.totalAccruedDays} days.`
+          });
+        } else {
+          // Normal case: user still has enough days with the new hire date
+          updateData.leaveRequestAllowed = newAccrualInfo.totalAccruedDays;
+          updateData.remainingLeaveDays = newAccrualInfo.totalAccruedDays - daysAlreadyTaken;
+        }
+      } catch (leaveCalcError) {
+        validationErrors.push({ msg: 'Error calculating leave balance for new hire date' });
+      }
+    }
+
+    // If we have validation errors, return them all at once
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        message: "Validation failed",
+        errors: validationErrors
+      });
+    }
+
     // Handle profile picture upload
     if (req.file) {
       updateData.profilePicture = `/uploads/${req.file.filename}`;
@@ -405,7 +455,30 @@ if (updateData.hireDate && new Date(updateData.hireDate).toISOString() !== new D
     res.status(200).json({ message: 'User updated successfully', user: updatedUser });
   } catch (err) {
     console.error('Error updating user:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    
+    // Handle MongoDB validation errors
+    if (err.name === 'ValidationError') {
+      const errorMessages = Object.values(err.errors).map(e => ({ msg: e.message }));
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: errorMessages
+      });
+    }
+    
+    // Handle duplicate key errors
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: [{ msg: `A user with this ${field} already exists` }]
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: err.message,
+      errors: [{ msg: "Internal server error occurred" }]
+    });
   }
 };
 

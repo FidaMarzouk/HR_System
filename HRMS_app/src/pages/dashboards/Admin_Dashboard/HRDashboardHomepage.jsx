@@ -563,7 +563,7 @@ const HRDashboardHomepage = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dashboardData.workforceAnalytics.salaryDistribution}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="range" tick={{ fill: colors.textSecondary }} />
+                    <XAxis dataKey="range" tick={{ fill: colors.textSecondary,fontSize: 13}} />
                     <YAxis tick={{ fill: colors.textSecondary }} />
                     <Tooltip
                       contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}

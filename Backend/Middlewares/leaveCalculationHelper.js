@@ -36,7 +36,7 @@ const calculateAccruedLeaveDays = (hireDate, role, currentDate = new Date()) => 
 };
 
 /**
- * Calculate total days taken in current year
+ * Calculate total days taken
  */
 const calculateDaysTaken = async (userId) => {
   const approvedRequests = await LeaveRequest.find({
@@ -54,8 +54,6 @@ const calculateDaysTaken = async (userId) => {
  */
 const updateUserLeaveBalance = async (userId) => {
   const user = await User.findById(userId);
-  if (!user) throw new Error('User not found');
-  
   // Calculate total accrued days based on hire date and role
   const totalAccruedDays = calculateAccruedLeaveDays(user.hireDate, user.role);
   

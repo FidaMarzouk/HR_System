@@ -16,7 +16,8 @@ const addUserValidationRules = [
   
   body('phone')
     .notEmpty().withMessage('Phone number is required.')
-    .matches(/^\d+$/).withMessage('Phone number should only contain numbers.'),
+    .matches(/^\d+$/).withMessage('Phone number should only contain numbers.')
+    .isLength({ min: 8, max: 8 }).withMessage('Phone number must be exactly 8 digits long.'),
   
   body('password')
     .notEmpty().withMessage('Password is required.')
@@ -25,6 +26,9 @@ const addUserValidationRules = [
   body('role')
     .notEmpty().withMessage('Role is required.'),
   
+  body('position')
+    .notEmpty().withMessage('Position is required.'),
+  
   body('personalEmail')
     .notEmpty().withMessage('Personal email is required.')
     .isEmail().withMessage('Invalid personal email format.'),
@@ -32,7 +36,8 @@ const addUserValidationRules = [
   body('salary')
     .notEmpty().withMessage('Salary is required.')
     .isFloat({ min: 0.01 }).withMessage('Salary must be a positive number greater than zero.'),
-    body('hireDate')
+    
+  body('hireDate')
     .notEmpty().withMessage('Hire date is required.')
     .custom(value => {
       const hireDate = new Date(value);
@@ -70,6 +75,10 @@ const updateUserValidationRules = [
     .optional()
     .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.'),
   
+  body('position')
+    .optional()
+    .notEmpty().withMessage('Position cannot be empty if provided.'),
+  
   body('personalEmail')
     .optional()
     .isEmail().withMessage('Invalid personal email format.'),
@@ -78,9 +87,11 @@ const updateUserValidationRules = [
     .optional()
     .isFloat({ min: 0.01 }).withMessage('Salary must be a positive number greater than zero.'),
 
-    body('hireDate')
-    .notEmpty().withMessage('Hire date is required.')
+  body('hireDate')
+    .optional()
     .custom(value => {
+      if (!value) return true; // Skip validation if empty
+      
       const hireDate = new Date(value);
       const today = new Date();
       
@@ -116,7 +127,7 @@ const updateProfileValidationRules = [
     .optional()
     .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.'),
     
-    body('currentPassword')
+  body('currentPassword')
     .if(body('password').exists())
     .notEmpty()
     .withMessage('Current password is required when changing password.')
@@ -142,7 +153,11 @@ const resetPasswordValidationRules = [
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    // Return all validation errors at once
+    return res.status(400).json({ 
+      message: 'Validation failed',
+      errors: errors.array()
+    });
   }
   next();
 };

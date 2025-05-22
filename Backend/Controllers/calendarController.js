@@ -475,21 +475,25 @@ exports.adminReviewEvent = async (req, res) => {
 
 exports.getUsersInvolved = async (req, res) => {
   try {
-    const users = await User.find().select("-password")
-    .populate({
+    const currentUserId = req.user.id;
+    let query = { _id: { $ne: currentUserId } }; // Always exclude current user
+    const users = await User.find(query)
+      .select("-password")
+      .populate({
         path: "departmentId",
         select: "name"
-    });
+      });
 
     return res.status(200).json({ users });
   } catch (err) {
     console.error('Error retrieving users:', err);
     res.status(500).json({ 
-        message: 'Server error', 
-        error: err.message 
+      message: 'Server error', 
+      error: err.message 
     });
   }
 };
+
 
 exports.getResources = async (req, res) => {
   try {

@@ -66,7 +66,7 @@ exports.getAllLeaveRequests = async (req, res) => {
             }, // Requests created by the manager
             {
               managerId: userId,
-              status: { $in: ["Pending", "Manager Approved", "Manager Rejected"] }
+              status: { $in: ["Pending", "Manager Approved", "Manager Rejected", "Admin Approved", "Admin Rejected"] }
             } // Requests assigned to the manager
           ]
         })
@@ -342,8 +342,23 @@ exports.adminApproveRequest = [updateLeaveBalanceOnApproval, async (req, res) =>
       request.status = 'Admin Approved';
       await request.save();
 
-        // Get employee and manager details
-        const employee = await User.findById(request.employeeId);
+      // Get employee details
+      const employee = await User.findById(request.employeeId);
+      
+      // Send notifications based on who created the leave request
+      if (request.createdBy === 'Manager') {
+        // For manager-created requests, only notify the manager who created it
+        await sendNotificationToUser(
+          request.employeeId, // This is actually the manager who created the request
+          {
+            title: 'Your Leave Request Approved by Admin',
+            message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been approved by admin.`,
+            type: 'leave_approved',
+            relatedId: request._id
+          }
+        );
+      } else if (request.createdBy === 'Employee') {
+        // For employee-created requests, notify both employee and their manager
         
         // Send notification to employee
         await sendNotificationToUser(
@@ -355,7 +370,8 @@ exports.adminApproveRequest = [updateLeaveBalanceOnApproval, async (req, res) =>
             relatedId: request._id
           }
         );
-        // Send notification to manager
+        
+        // Send notification to manager (if different from employee)
         if (request.managerId && request.managerId.toString() !== request.employeeId.toString()) {
           await sendNotificationToUser(
             request.managerId,
@@ -367,6 +383,8 @@ exports.adminApproveRequest = [updateLeaveBalanceOnApproval, async (req, res) =>
             }
           );
         }
+      }
+      
       return res.status(200).json({ message: 'Request approved by admin', request });
     }
   } catch (error) {
@@ -391,31 +409,49 @@ exports.adminRejectRequest = async (req, res) => {
       request.status = 'Admin Rejected';
       await request.save();
       
-      // Get employee details (this was missing!)
+      // Get employee details
       const employee = await User.findById(request.employeeId);
       
-       // Send notification to employee
-       await sendNotificationToUser(
-         request.employeeId,
-         {
-           title: 'Leave Request Rejected by Admin',
-           message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been rejected by admin.`,
-           type: 'leave_rejected',
-           relatedId: request._id
-         }
-       );
-      // Send notification to manager
-       if (request.managerId && request.managerId.toString() !== request.employeeId.toString()) {
-                await sendNotificationToUser(
-                  request.managerId,
-                  {
-                    title: 'Leave Request Rejected by Admin',
-                    message: `A leave request for ${employee.firstName} ${employee.lastName} from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been rejected by admin.`,
-                    type: 'leave_rejected',
-                    relatedId: request._id
-                  }
-                );
+      // Send notifications based on who created the leave request
+      if (request.createdBy === 'Manager') {
+        // For manager-created requests, only notify the manager who created it
+        await sendNotificationToUser(
+          request.employeeId, // This is actually the manager who created the request
+          {
+            title: 'Your Leave Request Rejected by Admin',
+            message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been rejected by HR.`,
+            type: 'leave_rejected',
+            relatedId: request._id
+          }
+        );
+      } else if (request.createdBy === 'Employee') {
+        // For employee-created requests, notify both employee and their manager
+        
+        // Send notification to employee
+        await sendNotificationToUser(
+          request.employeeId,
+          {
+            title: 'Leave Request Rejected by Admin',
+            message: `Your leave request from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been rejected by HR.`,
+            type: 'leave_rejected',
+            relatedId: request._id
+          }
+        );
+        
+        // Send notification to manager (if different from employee)
+        if (request.managerId && request.managerId.toString() !== request.employeeId.toString()) {
+          await sendNotificationToUser(
+            request.managerId,
+            {
+              title: 'Leave Request Rejected by Admin',
+              message: `A leave request for ${employee.firstName} ${employee.lastName} from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been rejected by HR.`,
+              type: 'leave_rejected',
+              relatedId: request._id
+            }
+          );
         }
+      }
+      
       return res.status(200).json({ message: 'Request rejected by admin', request });
     }
 

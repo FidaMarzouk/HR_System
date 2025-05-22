@@ -10,9 +10,9 @@ const Attendance = require('../Models/Attendance.js');
 
 // Expanded company knowledge base
 const companyKnowledge = {
-  leavePolicy: "Employees accrue an additional leave day for each month of service, whereas admins and managers receive two extra days per month.",
+  leavePolicy: "Employees accrue two additional leave days for each month of service.",
   workHours: "Standard work hours are 8:00 AM to 6:00 PM with a 1-hour and a half lunch break starting from 12:30 PM to 14:00 PM.",
-  contactHR: "For HR inquiries, please contact hr@enovarobotics.eu.",
+  contactHR: "For HR inquiries, please contact HR.",
   leaveTypes: ["Sick Leave", "Vacation Leave", "Maternity Leave", "Personal Leave", "Emergency Leave", "Unpaid Leave"],
   resourceTypes: ["desktop", "meetingRoom", "office", "robot", "toolKit", "testingEquipment", "prototype"],
   eventTypes: ["meeting", "mission", "resourceReservation"]
@@ -464,7 +464,7 @@ const getStaticResponse = (message) => {
   }
   
   // Default response
-  return "I don't have specific information about that. Please contact HR at hr@enovarobotics.eu for assistance.";
+  return "I don't have specific information about that. Please contact HR for assistance.";
 };
 
 // Enhanced leave request status handler with more detailed responses
@@ -1531,7 +1531,7 @@ exports.sendMessage = async (req, res) => {
             response = companyKnowledge.workHours;
             break;
           case 'salaryInfo':
-            response = "For salary information, please contact HR at hr@enovarobotics.eu or call extension 103.";
+            response = "For salary information, please contact HR.";
             break;
           default:
             response = getStaticResponse(message);

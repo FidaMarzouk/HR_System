@@ -835,12 +835,12 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     // Calculate attendance rate
     const attendanceRate = expectedWorkDays > 0 
       ? ((presentDays + lateDays) / expectedWorkDays) * 100 
-      : 100;
+      : 0;
     
     // Calculate punctuality rate
     const punctualityRate = (presentDays + lateDays) > 0 
       ? (presentDays / (presentDays + lateDays)) * 100 
-      : 100;
+      : 0;
     
     // Calculate productivity metrics
     const totalProductionHours = attendanceData.reduce((sum, record) => 
@@ -852,7 +852,7 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     // Calculate productivity rate
     const productivityRate = expectedProductionHours > 0 
       ? (totalProductionHours / expectedProductionHours) * 100 
-      : 100;
+      : 0;
     
     // Get completed calendar events
     const completedEvents = await CalendarEvent.countDocuments({
@@ -906,11 +906,11 @@ async function getEmployeePerformance(userId, startDate, endDate) {
       
       const lastYearAttendanceRate = lastYearExpectedDays > 0 
         ? ((lastYearPresentDays + lastYearLateDays) / lastYearExpectedDays) * 100 
-        : 100;
+        : 0;
       
       const lastYearPunctualityRate = (lastYearPresentDays + lastYearLateDays) > 0 
         ? (lastYearPresentDays / (lastYearPresentDays + lastYearLateDays)) * 100 
-        : 100;
+        : 0;
       
       const lastYearProductionHours = lastYearAttendance.reduce((sum, record) => 
         sum + (record.productionHours || 0), 0);
@@ -919,7 +919,7 @@ async function getEmployeePerformance(userId, startDate, endDate) {
       
       const lastYearProductivityRate = lastYearExpectedHours > 0 
         ? (lastYearProductionHours / lastYearExpectedHours) * 100 
-        : 100;
+        : 0;
       
       const lastYearPerformanceScore = Math.round(
         (lastYearAttendanceRate * 0.3) +

@@ -38,6 +38,6 @@ router.get('/resources/:id', getResourceById);
 
 router.get('/types', authMiddleware, getResourceTypes);
 
-router.get('/', getUsersInvolved);
+router.get('/', authMiddleware, getUsersInvolved);
 
 module.exports = router;

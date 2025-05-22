@@ -441,9 +441,9 @@ async function getSalaryDistribution() {
     
     let label;
     if (range.max === Number.MAX_SAFE_INTEGER) {
-      label = `$${range.min}+`;
+      label = `${range.min}DT+`;
     } else {
-      label = `$${range.min} - $${range.max}`;
+      label = `${range.min}DT - ${range.max}DT`;
     }
     
     salaryRanges.push({

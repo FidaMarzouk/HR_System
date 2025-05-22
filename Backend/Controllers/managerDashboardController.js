@@ -135,7 +135,7 @@ async function getTeamAttendanceRate(teamIds, startDate, endDate) {
   const attendanceCount = await Attendance.countDocuments({
     userId: { $in: teamIds },
     date: { $gte: startDate, $lte: endDate },
-    status: 'Present'
+    status: { $ne: 'Absent' }
   });
   
   return {

@@ -190,9 +190,9 @@ const EmployeePage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage(""); // Clear previous errors
   
     try {
-  
       // Create FormData object
       const formData = new FormData();
   
@@ -238,12 +238,12 @@ const EmployeePage = () => {
           fetchEmployees();
         }
       } else {
-        // For creating, validate required fields
+        // For creating, validate required fields client-side first (optional but recommended)
         const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'position', 'role', 'salary', 'hireDate', 'personalEmail'];
         const missingFields = requiredFields.filter(field => !newEmployee[field]);
         
         if (missingFields.length > 0) {
-          return setErrorMessage(`Please fill in all required fields: ${missingFields.join(', ')}`);
+          return setErrorMessage(`Please fill in all required fields:\n• ${missingFields.join('\n• ')}`);
         }
   
         // Add all employee fields to formData
@@ -270,7 +270,8 @@ const EmployeePage = () => {
           {
             headers: { 
               'Content-Type': 'multipart/form-data'
-            },withCredentials: true, 
+            },
+            withCredentials: true, 
           }
         );
   
@@ -292,12 +293,13 @@ const EmployeePage = () => {
         salary: "",
         departmentId: "",
         managerId: "",
+        skills: "",
+        personalEmail: "",
       });
       setSelectedFile(null);
       setPreviewImage(null);
       setIsCreating(false);
       setSelectedEmployee(null);
-      setErrorMessage("");
   
       // Clear success message after delay
       setTimeout(() => {
@@ -309,19 +311,22 @@ const EmployeePage = () => {
       
       // Check if the error response contains validation errors
       if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-        // Format validation errors for display
-        const validationErrors = error.response.data.errors.map(err => err.msg).join('\n• ');
-        setErrorMessage(`Please correct the following issues:\n• ${validationErrors}`);
+        // Format validation errors for display - show all errors at once
+        const validationErrors = error.response.data.errors.map(err => err.msg);
+        const uniqueErrors = [...new Set(validationErrors)]; // Remove duplicates
+        setErrorMessage(`Please correct the following issues:\n• ${uniqueErrors.join('\n• ')}`);
+      } else if (error.response?.data?.message) {
+        // Display specific error message from server
+        setErrorMessage(error.response.data.message);
       } else {
-        // Display generic or specific error message
-        const errorMessage = error.response?.data?.message || "An error occurred while saving. Please try again.";
-        setErrorMessage(errorMessage);
+        // Display generic error message
+        setErrorMessage("An error occurred while saving. Please try again.");
       }
       
-      // Clear error message after delay
+      // Clear error message after delay (increased time to read all errors)
       setTimeout(() => {
         setErrorMessage("");
-      }, 50000);
+      }, 8000);
     }
   };
   
@@ -374,6 +379,7 @@ const EmployeePage = () => {
   };
 
   const handleCancel = () => {
+    setErrorMessage(""); 
     setIsEditing(false); 
     setIsCreating(false); 
     setNewEmployee({}); 
@@ -733,7 +739,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
 
           {/* Desktop/Tablet View */}
           <div className="hidden md:block">
-            <div className="w-full overflow-y-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333] scrollbar-thin scrollbar-track-gray-700 scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
+            <div className="w-full overflow-y-auto mt-1 rounded-lg bg-[#222] shadow-inner border border-[#333]">
               <table className="table-auto w-full text-left border-separate border-spacing-y-1">
                 <thead className="bg-[#2c2c2c] sticky top-0">
                   <tr>
@@ -1165,6 +1171,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
             {/* First Name */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">First Name</label>
+              <div className="relative">
               <input 
                 type="text" 
                 name="firstName" 
@@ -1172,11 +1179,14 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300"  
               />
+              <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Last Name */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Last Name</label>
+              <div className="relative">
               <input 
                 type="text" 
                 name="lastName" 
@@ -1184,44 +1194,53 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
               />
+                <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Email */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
+              <div className="relative">
               <input 
                 type="email" 
                 name="email" 
                 value={isEditing ? selectedEmployee?.email || "" : newEmployee?.email || ""} 
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-                required
               />
+              <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Personal Email */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Personal Email</label>
+              <div className="relative">
               <input 
                 type="email" 
                 name="personalEmail" 
                 value={isEditing ? selectedEmployee?.personalEmail || "" : newEmployee?.personalEmail || ""} 
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
-                required
               />
+                <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Phone */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Phone</label>
+              <div className="relative">
               <input 
-                type="number" 
+                type="tel" 
                 name="phone" 
                 value={isEditing ? selectedEmployee?.phone || "" : newEmployee?.phone || ""} 
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
               />
+              <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Skills */}
@@ -1241,7 +1260,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
 
             {/* Hire Date */}
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-300">Hire Date</label>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Hire Date <span className="text-red-500">*</span></label>
               <input 
                 type="date" 
                 name="hireDate" 
@@ -1253,7 +1272,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
 
             {/* Role */}
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-300">Role</label>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Role <span className="text-red-500">*</span></label>
               <select
                 name="role"
                 value={isEditing ? selectedEmployee?.role || "" : newEmployee?.role || ""}
@@ -1270,6 +1289,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
             {/* Position */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Position</label>
+              <div className="relative">
               <input 
                 type="text" 
                 name="position" 
@@ -1277,11 +1297,13 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
               />
+                <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Salary */}
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-300">Salary</label>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Salary <span className="text-red-500">*</span></label>
               <input 
                 type="number" 
                 name="salary" 
@@ -1293,7 +1315,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
 
             {/* Department Selection */}
             <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-300">Department</label>
+              <label className="block text-sm font-semibold mb-1 text-gray-300">Department <span className="text-red-500">*</span></label>
               <select
                 name="departmentId"
                 value={isEditing ? (selectedEmployee?.departmentId?._id || selectedEmployee?.departmentId || "") : newEmployee?.departmentId || ""}
@@ -1310,6 +1332,8 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
             {/* Password Field */}
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Password</label>
+              <div className="relative">
+
               <input 
                 type="password" 
                 name="password" 
@@ -1317,6 +1341,8 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
                 onChange={handleFormChange} 
                 className="p-2 border border-[#444] rounded w-full bg-[#333] text-gray-300" 
               />
+                <span className="absolute top-2 right-2 text-red-500">*</span>
+              </div>
             </div>
 
             {/* Submit & Cancel Buttons */}
@@ -1339,6 +1365,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
         </form>
       </div>
     )}
+
     {/* Department Form*/}
     {(isCreatingDept || isEditingDept) && (
       <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-4">

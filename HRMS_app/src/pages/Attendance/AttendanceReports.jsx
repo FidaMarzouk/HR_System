@@ -92,7 +92,19 @@ const AttendanceReports = ({ onDataRefresh }) => {
       timeZone: 'Africa/Tunis' 
     });
   };
- 
+  const formatHoursToHourMin = (hours) => {
+    if (!hours || hours <= 0) return '-';
+    const hrs = Math.floor(hours);
+    const mins = Math.round((hours - hrs) * 60);
+    return `${hrs}h${mins > 0 ? ` ${mins}min` : ''}`;
+  };
+  const formatMinutesToHourMin = (minutes) => {
+    if (!minutes || minutes <= 0) return '-';
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hrs > 0 ? `${hrs}h` : ''}${mins > 0 ? `${mins}min` : ''}`.trim();
+  };
+
   // Format date
   const formatDate = (date, formatStr) => {
     if (formatStr === 'yyyy-MM-dd') {
@@ -235,17 +247,17 @@ const AttendanceReports = ({ onDataRefresh }) => {
                             {record.checkOut ? formatTime(record.checkOut) : 'Not out'}
                           </TableCell>
                           <TableCell className="text-white text-xs sm:text-sm p-2 sm:p-4 whitespace-nowrap">
-                            {record.lateBy && record.lateBy > 0 ? `${record.lateBy} min` : '-'}
+                            {record.lateBy && record.lateBy > 0 ? formatMinutesToHourMin(record.lateBy) : '-'}
                           </TableCell>
                           <TableCell className="text-white text-xs sm:text-sm p-2 sm:p-4 whitespace-nowrap">
-                            {record.overtime && record.overtime > 0 ? `${record.overtime} min` : '-'}
+                            {record.overtime && record.overtime > 0 ? formatMinutesToHourMin(record.overtime) : '-'}
                           </TableCell>
                           <TableCell className="text-white text-xs sm:text-sm p-2 sm:p-4 whitespace-nowrap">
                             {record.breaks && record.breaks.length > 0 ? (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button variant="ghost" className="p-1 text-[#2dd4bf] hover:bg-[#2dd4bf]/10 text-xs sm:text-sm h-auto whitespace-nowrap">
-                                    {`${record.breaks.length} (${calculateTotalBreakTime(record.breaks)} min)`}
+                                  {`${record.breaks.length} (${formatMinutesToHourMin(calculateTotalBreakTime(record.breaks))})`}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="bg-[#1a1f23] border-[#2dd4bf]/30 w-auto max-w-[90vw] sm:max-w-[300px]">
@@ -255,7 +267,7 @@ const AttendanceReports = ({ onDataRefresh }) => {
                                       {record.breaks.map((breakItem, index) => (
                                         <div key={index} className="text-xs sm:text-sm text-white py-1">
                                           Break {index + 1}: {formatTime(breakItem.startTime)} - {breakItem.endTime ? formatTime(breakItem.endTime) : 'Ongoing'}
-                                          {breakItem.duration ? ` (${breakItem.duration} min)` : ' (0 min)'}
+                                          {breakItem.duration ? ` (${formatMinutesToHourMin(breakItem.duration)})` : ' (0 min)'}
                                         </div>
                                       ))}
                                     </div>
@@ -267,7 +279,7 @@ const AttendanceReports = ({ onDataRefresh }) => {
                             )}
                           </TableCell>
                           <TableCell className="text-white text-xs sm:text-sm p-2 sm:p-4 whitespace-nowrap">
-                            {record.productionHours ? `${record.productionHours} hrs` : '-'}
+                          {record.productionHours ? formatHoursToHourMin(record.productionHours) : '-'}
                           </TableCell>
                         </TableRow>
                       ))
