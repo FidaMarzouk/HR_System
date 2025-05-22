@@ -108,13 +108,18 @@ const updateProfileValidationRules = [
     .optional()
     .isEmail().withMessage('Invalid email format.'),
   
-  body('phoneNumber')
+  body('phone')
     .optional()
     .matches(/^\d+$/).withMessage('Phone number should only contain numbers.'),
   
   body('password')
     .optional()
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.')
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.'),
+    
+    body('currentPassword')
+    .if(body('password').exists())
+    .notEmpty()
+    .withMessage('Current password is required when changing password.')
 ];
 
 // Validation rules for password reset

@@ -74,7 +74,21 @@ const LeaveRequestPage = () => {
     'Unpaid Leave',
     'Other'
   ];
-  
+  const showSwal = (icon, title, text) => {
+    Swal.fire({
+      icon,
+      title,
+      text,
+      timer: 2000,
+      background: '#1e262c',
+      customClass: {
+        popup: 'bg-[#1E1E1E] text-white border border-gray-700',
+        title: 'text-white',
+        content: 'text-gray-300',
+        confirmButton: 'bg-[#3baca5] hover:bg-[#2a7d78] text-white'
+      }
+    });
+  };
   // Status options for filter
   const statusOptions = [
     'all',

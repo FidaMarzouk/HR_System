@@ -13,7 +13,6 @@ const ProfilePage = () => {
     lastName: "",
     email: "",
     phone: "",
-    position: "",
     birthdate: "",
     skills: [],
     profilePicture: "",
@@ -40,11 +39,10 @@ const ProfilePage = () => {
         // First, fetch authentication status to get current user ID
         const authResponse = await fetch(`http://localhost:8080/api/auth/verify`, {
           method: "GET",
-          credentials: "include", // Important for sending cookies
+          credentials: "include",
         });
 
         if (!authResponse.ok) {
-          // If not authenticated, redirect to login
           navigate('/login');
           return;
         }
@@ -60,7 +58,7 @@ const ProfilePage = () => {
         const userId = authData.user.id;
         const response = await fetch(`http://localhost:8080/api/users/profile/${userId}`, {
           method: "GET",
-          credentials: "include", // Important for sending cookies
+          credentials: "include",
         });
 
         if (response.ok) {
@@ -71,7 +69,6 @@ const ProfilePage = () => {
             lastName: userData.lastName || "",
             email: userData.email || "",
             phone: userData.phone || "",
-            position: userData.position || "",
             birthdate: userData.birthdate ? new Date(userData.birthdate).toISOString().split('T')[0] : "",
             skills: userData.skills || [],
             profilePicture: userData.profilePicture || "",
@@ -116,6 +113,32 @@ const ProfilePage = () => {
       setError("Phone number should only contain numbers");
       setTimeout(() => setError(""), 3000);
       return;
+    }
+
+    // email validation
+    if (name === 'email' && value && !isEmailValid(value)) {
+      setError("Please enter a valid email address");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+
+    // password validation
+    if (name === 'newPassword' && value && value.length > 0 && value.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+
+    // password confirmation match
+    if (name === 'confirmPassword' && value && formData.newPassword && value !== formData.newPassword) {
+      setError("Passwords do not match");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+
+    //Clear error when user starts typing correctly
+    if (error) {
+      setError("");
     }
     
     setFormData({
@@ -206,7 +229,7 @@ const ProfilePage = () => {
       // First verify auth to get current user ID
       const authResponse = await fetch(`http://localhost:8080/api/auth/verify`, {
         method: "GET",
-        credentials: "include", // Important for sending cookies
+        credentials: "include",
       });
 
       if (!authResponse.ok) {
@@ -234,7 +257,6 @@ const ProfilePage = () => {
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
-        position: formData.position,
         birthdate: formData.birthdate,
         ...(age !== null ? { age } : {}),
         skills: formData.skills
@@ -262,7 +284,7 @@ const ProfilePage = () => {
   
       const response = await fetch(`http://localhost:8080/api/users/profile/${userId}`, {
         method: "PUT",
-        credentials: "include", // Important for sending cookies
+        credentials: "include",
         body: data
       });
 
@@ -530,10 +552,11 @@ const ProfilePage = () => {
                     <input
                       type="text"
                       name="position"
-                      value={formData.position}
+                      value={user?.position}
                       onChange={handleInputChange}
                       className="w-full bg-gray-900/50 border border-[#23A49B]/30 rounded-lg pl-10 p-3 text-white focus:outline-none focus:border-[#23A49B] transition-colors"
                       placeholder="Position"
+                      disabled
                     />
                   </div>
                 </div>

@@ -27,6 +27,7 @@ const server = http.createServer(app);
 console.log('Current server time:', new Date().toLocaleString());
 // Initialize Socket.IO
 const io = initializeSocket(server);
+app.set('io', io);
 
 // Update CORS configuration to allow credentials
 app.use(cors({

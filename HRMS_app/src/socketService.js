@@ -23,6 +23,16 @@ export const getSocket = () => {
   return socket;
 };
 
+// These functions are kept for backward compatibility but are not needed
+// since backend automatically handles room joining
+export const joinUserRoom = (userId) => {
+  console.log(`User ${userId} should be automatically joined to room by backend`);
+};
+
+export const leaveUserRoom = () => {
+  console.log('User will be automatically removed from rooms on disconnect');
+};
+
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();

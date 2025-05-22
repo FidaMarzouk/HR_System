@@ -23,6 +23,17 @@ exports.updateProfile = async (req, res) => {
         return res.status(400).json({ message: 'Email is already in use by another account' });
       }
     }
+        // Check for existing phone
+    if (updateData.phone) {
+          const existingUser = await User.findOne({ 
+            phone: updateData.phone, 
+            _id: { $ne: userId } 
+          });
+          
+          if (existingUser) {
+            return res.status(400).json({ message: 'Phone number is already in use by another account' });
+          }
+    }
     
     // Handle profile picture upload if provided
     if (req.file) {
@@ -42,7 +53,7 @@ exports.updateProfile = async (req, res) => {
     }
     
     // Fields that should not be updated by the user
-    const restrictedFields = ['role', 'departmentId', 'managerId', 'salary', 'leaveRequestAllowed', 'remainingLeaveDays'];
+    const restrictedFields = ['role', 'departmentId', 'managerId', 'salary', 'leaveRequestAllowed', 'remainingLeaveDays', 'position'];
     restrictedFields.forEach(field => delete updateData[field]);
     
     // Update the user data

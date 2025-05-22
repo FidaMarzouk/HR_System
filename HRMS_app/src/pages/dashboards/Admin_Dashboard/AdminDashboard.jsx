@@ -30,7 +30,7 @@ import ChatBot from '../../ChatBot';
 import ChatComponent from '../../TeamChat';
 import HRDashboardHomepage from '../Admin_Dashboard/HRDashboardHomepage';
 import PersonalDashboard from '../Employee_Dashboard/EmployeeDashboardHomepage';
-import { getSocket } from '../../../socketService';
+import { getSocket, joinUserRoom } from '../../../socketService';
 import Footer from '../../../components/ui/footer';
 
 // Circuit pattern for background
@@ -75,11 +75,16 @@ const AdminDashboard = () => {
         withCredentials: true
       });
       
-      // Calculate unread notifications
-      const notifications = Array.isArray(response.data) ? response.data : [];
+      // Handle both old and new response formats for backward compatibility
+      const notifications = Array.isArray(response.data) 
+        ? response.data 
+        : response.data.notifications || [];
+      
       const unreadCount = notifications.filter(n => !n.isRead).length;
       setUnreadNotifications(unreadCount);
+      console.log('Admin Dashboard: Updated unread notifications count to:', unreadCount);
     } catch (error) {
+      console.error('Admin Dashboard: Error fetching notifications:', error);
       setUnreadNotifications(0);
     }
   };
@@ -87,12 +92,10 @@ const AdminDashboard = () => {
   // Fetch unread messages count
   const fetchUnreadMessagesCount = async () => {
     try {
-      // Use the dedicated endpoint for unread count
       const response = await axios.get('http://localhost:8080/api/chat/unread', {
         withCredentials: true
       });
       
-      // The endpoint directly returns { unreadCount }
       setUnreadMessages(response.data.unreadCount);
     } catch (error) {
       setUnreadMessages(0);
@@ -107,14 +110,20 @@ const AdminDashboard = () => {
       });
       
       if (response.data) {
-        setUser({
+        const userData = {
           firstName: response.data.firstName,
           lastName: response.data.lastName,
           email: response.data.email,
           picture: response.data.picture || '',
           role: response.data.role || 'System Administrator',
-          id: response.data._id || ''
-        });
+          id: response.data.id
+        };
+        setUser(userData);
+        
+        //Only join room if we have a valid user ID
+        if (userData.id && userData.id.trim() !== '') {
+          joinUserRoom(userData.id);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -123,14 +132,10 @@ const AdminDashboard = () => {
 
   // Initial data loading effect
   useEffect(() => {
-    // Fetch user data first
     fetchUserData();
-    
-    // Fetch initial counts
     fetchUnreadNotificationCount();
     fetchUnreadMessagesCount();
     
-    // Set up timer for current time
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
@@ -138,52 +143,61 @@ const AdminDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Setup socket listeners for notifications
   useEffect(() => {
+    // Don't set up socket listeners until we have a user ID
+    if (!user.id || user.id.trim() === '') {
+      return;
+    }
     const socket = getSocket();
-  
-    // Notification listeners
-    socket.on('notification', () => {
-      fetchUnreadNotificationCount();
-    });
-  
-    socket.on('notificationUpdate', ({ type }) => {
-      if (type === 'read' || type === 'readAll' || type === 'delete') {
-        fetchUnreadNotificationCount();
-      }
-    });
-  
-    return () => {
-      socket.off('notification');
-      socket.off('notificationUpdate');
-    };
-  }, []);
-
-  // Setup socket listeners for messages - depends on user.id
-  useEffect(() => {
-    // Only set up message listeners if we have a valid user ID
-    if (!user.id) return;
     
-    const socket = getSocket();
+    const handleConnect = () => {
+      // Backend automatically joins user to rooms, no need to call joinUserRoom
+    };
   
-    socket.on('newMessage', (message) => {
-      // Check if the message is for the current user
+    // Notification handlers
+    const handleNotification = (data) => {
+      fetchUnreadNotificationCount();
+    };
+  
+    const handleNotificationUpdate = ({ type, id }) => {
+      
+      if (type === 'read' || type === 'readAll' || type === 'delete') {
+        // Add a small delay to ensure the backend has processed the change
+        setTimeout(() => {
+          fetchUnreadNotificationCount();
+        }, 100);
+      }
+    };
+  
+    // Message handlers
+    const handleNewMessage = (message) => {
       if (message.receiver && message.receiver._id === user.id) {
-        // Fetch latest count
         fetchUnreadMessagesCount();
       }
-    });
-  
-    socket.on('messagesRead', () => {
-      // Refresh count when messages are marked as read
-      fetchUnreadMessagesCount();
-    });
-  
-    return () => {
-      socket.off('newMessage');
-      socket.off('messagesRead');
     };
-  }, [user.id]);
+  
+    const handleMessagesRead = () => {
+      fetchUnreadMessagesCount();
+    };
+  
+    // Add ALL listeners
+    socket.on('connect', handleConnect);
+    socket.on('notification', handleNotification);
+    socket.on('notificationUpdate', handleNotificationUpdate);
+    socket.on('newMessage', handleNewMessage);
+    socket.on('messagesRead', handleMessagesRead);
+  
+  
+    // Cleanup function - remove ALL listeners
+    return () => {
+      console.log('Admin Dashboard: Cleaning up socket listeners for user:', user.id);
+      socket.off('connect', handleConnect);
+      socket.off('notification', handleNotification);
+      socket.off('notificationUpdate', handleNotificationUpdate);
+      socket.off('newMessage', handleNewMessage);
+      socket.off('messagesRead', handleMessagesRead);
+    };
+  }, [user.id]); // Only depend on user.id
 
   useEffect(() => {
     const handleClickOutside = (event) => {

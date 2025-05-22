@@ -60,37 +60,19 @@ io.use((socket, next) => {
 });
 
   io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
-    
     // Automatically join personal and role rooms
     const userId = socket.user.id;
     const userRole = socket.user.role;
     
     // Join personal room
     socket.join(userId);
-    console.log(`User ${userId} joined personal room`);
     
     // Join role room if available
     if (userRole) {
       socket.join(userRole);
-      console.log(`User joined ${userRole} room`);
     }
-    
-    // Handle marking messages as read
-    socket.on('messagesRead', async (data) => {
-      try {
-        const { userId } = data;
-        console.log(`Messages to ${userId} marked as read`);
-        
-        // Update notifications as read in database
-        // Consider adding code here if you need to mark messages as read in DB
-      } catch (error) {
-        console.error('Error in messagesRead socket handler:', error);
-      }
-    });
 
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.id}`);
     });
   });
 

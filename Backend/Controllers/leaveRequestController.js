@@ -338,12 +338,12 @@ exports.adminApproveRequest = [updateLeaveBalanceOnApproval, async (req, res) =>
       return res.status(400).json({ message: 'Request has already been rejected by admin' });
     }
     // If the status is either Pending, Manager Approved we can approve it.
-    if (['Pending', 'Manager Approved'].includes(request.status)) {
+    if (['Pending', 'Manager Approved', 'Manager Rejected'].includes(request.status)) {
       request.status = 'Admin Approved';
       await request.save();
+
         // Get employee and manager details
         const employee = await User.findById(request.employeeId);
-        const admin = await User.findById(req.user.id);
         
         // Send notification to employee
         await sendNotificationToUser(
@@ -390,6 +390,10 @@ exports.adminRejectRequest = async (req, res) => {
     if (['Pending', 'Manager Approved', 'Manager Rejected'].includes(request.status)) {
       request.status = 'Admin Rejected';
       await request.save();
+      
+      // Get employee details (this was missing!)
+      const employee = await User.findById(request.employeeId);
+      
        // Send notification to employee
        await sendNotificationToUser(
          request.employeeId,

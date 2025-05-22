@@ -17,9 +17,8 @@ const calculateDaysBetweenDates = (startDate, endDate) => {
 };
 
 /**
- * Calculate accrued leave days based on months worked and role
- * Managers/Admins: 2 days per month
- * Employees: 1 day per month
+ * Calculate accrued leave days based on months worked
+ * All roles: 2 days per month
  */
 const calculateAccruedLeaveDays = (hireDate, role, currentDate = new Date()) => {
   const hireDateObj = new Date(hireDate);
@@ -29,8 +28,8 @@ const calculateAccruedLeaveDays = (hireDate, role, currentDate = new Date()) => 
   const monthsWorked = (referenceDate.getFullYear() - hireDateObj.getFullYear()) * 12 +
     (referenceDate.getMonth() - hireDateObj.getMonth());
   
-  // Apply role-based accrual rate for each month
-  const monthlyAccrual = (role === 'employee') ? 1 : 2;
+  // Apply consistent accrual rate of 2 days per month for all roles
+  const monthlyAccrual = 2;
   const accruedDays = monthsWorked * monthlyAccrual;
   
   return Math.max(0, accruedDays);

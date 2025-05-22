@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCircle, Trash2, Clock, AlertTriangle, Info, FileText, Calendar, Users } from 'lucide-react';
 import axios from 'axios';
-import Swal from 'sweetalert2';
-import { io } from 'socket.io-client';
+import { getSocket } from '../socketService';
 
 const NotificationPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -14,35 +13,18 @@ const NotificationPage = () => {
   const limit = 10; 
   const socketRef = useRef(null);
 
+ 
   // Initialize socket connection and handle notifications
   useEffect(() => {
-    // Connect to socket server using cookie authentication
-    // No need to pass token as cookies will be sent automatically with withCredentials
-    socketRef.current = io('http://localhost:8080', {
-      withCredentials: true,
-    });
+    const socket = getSocket();
+    socketRef.current = socket;
 
     // Listen for new notifications
     socketRef.current.on('notification', (newNotification) => {
       // Add the new notification to the state
       setNotifications(prev => [newNotification, ...prev]);
-      
-      // Show toast notification
-      Swal.fire({
-        icon: 'info',
-        title: newNotification.title,
-        text: newNotification.message,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        background: '#1E1E1E',
-        color: '#fff'
-      });
     });
 
-    // Listen for notification updates (read/deleted)
     socketRef.current.on('notificationUpdate', ({ id, type, data }) => {
       if (type === 'read') {
         setNotifications(prev => 
@@ -61,13 +43,16 @@ const NotificationPage = () => {
       }
     });
 
-    // Cleanup on unmount
+    // Cleanup on unmount - ONLY remove listeners, don't disconnect shared socket
     return () => {
       if (socketRef.current) {
-        socketRef.current.disconnect();
+        // Remove only the listeners this component added
+        socketRef.current.off('notification');
+        socketRef.current.off('notificationUpdate');
+        // DON'T disconnect the shared socket - other components might be using it
       }
     };
-  }, []); // Removed the token dependency since we're using cookies
+  }, []);
 
   // Fetch notifications on component mount
   useEffect(() => {
@@ -89,7 +74,6 @@ const NotificationPage = () => {
     } else {
       setLoadingMore(true);
     }
-    
     try {
       // Using axios with withCredentials to send cookies automatically
       const response = await axios.get('http://localhost:8080/api/notifications', {
@@ -123,15 +107,6 @@ const NotificationPage = () => {
       if (isInitialLoad) {
         setNotifications([]);
       }
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load notifications',
-        background: '#1E1E1E',
-        color: '#fff',
-        confirmButtonColor: '#3baca5'
-      });
     } finally {
       if (isInitialLoad) {
         setLoading(false);
@@ -162,21 +137,8 @@ const markAsRead = async (id) => {
         notif._id === id ? { ...notif, isRead: true } : notif
       )
     );
-
-    // Emit socket event for other clients
-    if (socketRef.current) {
-      socketRef.current.emit('markNotificationRead', { id });
-    }
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Failed to update notification',
-      background: '#1E1E1E',
-      color: '#fff',
-      confirmButtonColor: '#3baca5'
-    });
   }
 };
   // Function to mark all notifications as read
@@ -191,21 +153,8 @@ const markAsRead = async (id) => {
       setNotifications(prev => 
         prev.map(notif => ({ ...notif, isRead: true }))
       );
-      
-      // Emit socket event for other clients
-      if (socketRef.current) {
-        socketRef.current.emit('markAllNotificationsRead');
-      }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to update notifications',
-        background: '#1E1E1E',
-        color: '#fff',
-        confirmButtonColor: '#3baca5'
-      });
     }
   };
 
@@ -221,21 +170,8 @@ const markAsRead = async (id) => {
       setNotifications(prev => 
         prev.filter(notif => notif._id !== id)
       );
-      
-      // Emit socket event for other clients
-      if (socketRef.current) {
-        socketRef.current.emit('deleteNotification', { id });
-      }
     } catch (error) {
       console.error('Error deleting notification:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to delete notification',
-        background: '#1E1E1E',
-        color: '#fff',
-        confirmButtonColor: '#3baca5'
-      });
     }
   };
   // Circuit pattern for background - matches your AdminDashboard
