@@ -31,59 +31,57 @@ const ProfilePage = () => {
   // Validation helper functions
   const isNameValid = (name) => /^[A-Za-z\s]+$/.test(name);
   const isPhoneValid = (phone) => /^\d+$/.test(phone);
+  const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   useEffect(() => {
     const fetchUserData = async () => {
       setIsLoading(true);
       try {
-        // First, fetch authentication status to get current user ID
-        const authResponse = await fetch(`http://localhost:8080/api/auth/verify`, {
+        // Fetch user ID
+        const userResponse = await fetch(`http://localhost:8080/api/users/me`, {
           method: "GET",
           credentials: "include",
         });
 
-        if (!authResponse.ok) {
-          navigate('/login');
+        let userId = null;
+        if (userResponse.ok) {
+          const userMeData = await userResponse.json();
+          userId = userMeData.id;
+        } else {
+          const errorData = await userResponse.json();
+          console.error("Error from /api/users/me:", errorData);
+          setError(errorData.message || "Failed to fetch user ID");
           return;
         }
-
-        const authData = await authResponse.json();
-        
-        if (!authData.authenticated || !authData.user || !authData.user.id) {
-          navigate('/login');
-          return;
-        }
-
-        // Use the user ID from the auth response to fetch profile data
-        const userId = authData.user.id;
-        const response = await fetch(`http://localhost:8080/api/users/profile/${userId}`, {
+        console.log("Fetched user ID from /me:", userId);
+        // Fetch profile data
+        const profileResponse = await fetch(`http://localhost:8080/api/users/profile/${userId}`, {
           method: "GET",
           credentials: "include",
         });
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setUser({ ...profileData, id: userId });
           setFormData({
-            firstName: userData.firstName || "",
-            lastName: userData.lastName || "",
-            email: userData.email || "",
-            phone: userData.phone || "",
-            birthdate: userData.birthdate ? new Date(userData.birthdate).toISOString().split('T')[0] : "",
-            skills: userData.skills || [],
-            profilePicture: userData.profilePicture || "",
+            firstName: profileData.firstName || "",
+            lastName: profileData.lastName || "",
+            phone: profileData.phone || "",
+            birthdate: profileData.birthdate ? new Date(profileData.birthdate).toISOString().split('T')[0] : "",
+            skills: profileData.skills || [],
+            profilePicture: profileData.profilePicture || "",
             currentPassword: "",
             newPassword: "",
             confirmPassword: ""
           });
         } else {
-          const errorData = await response.json();
+          const errorData = await profileResponse.json();
+          console.error("Error from /api/users/profile:", errorData);
           setError(errorData.message || "Failed to load profile data");
-          setTimeout(() => setError(""), 5000);
         }
       } catch (error) {
+        console.error("Fetch error:", error);
         setError("An error occurred while fetching your profile");
-        setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoading(false);
       }
@@ -95,7 +93,6 @@ const ProfilePage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Validate first name and last name (only characters allowed)
     if (name === 'firstName' && value && !isNameValid(value)) {
       setError("First name should only contain letters");
       setTimeout(() => setError(""), 3000);
@@ -108,35 +105,12 @@ const ProfilePage = () => {
       return;
     }
     
-    // Validate phone number (only numbers allowed)
     if (name === 'phone' && value && !isPhoneValid(value)) {
       setError("Phone number should only contain numbers");
       setTimeout(() => setError(""), 3000);
       return;
     }
 
-    // email validation
-    if (name === 'email' && value && !isEmailValid(value)) {
-      setError("Please enter a valid email address");
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
-
-    // password validation
-    if (name === 'newPassword' && value && value.length > 0 && value.length < 6) {
-      setError("Password must be at least 6 characters long");
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
-
-    // password confirmation match
-    if (name === 'confirmPassword' && value && formData.newPassword && value !== formData.newPassword) {
-      setError("Passwords do not match");
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
-
-    //Clear error when user starts typing correctly
     if (error) {
       setError("");
     }
@@ -190,85 +164,48 @@ const ProfilePage = () => {
     setIsLoading(true);
     setError("");
     setSuccess("");
-
-    // Validate form data before submission
-    if (formData.firstName && !isNameValid(formData.firstName)) {
-      setError("First name should only contain letters");
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.lastName && !isNameValid(formData.lastName)) {
-      setError("Last name should only contain letters");
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.phone && !isPhoneValid(formData.phone)) {
-      setError("Phone number should only contain numbers");
-      setIsLoading(false);
-      return;
-    }
-
-    // Password validation
+  
+    const validationErrors = [];
+  
     if (changePassword) {
       if (!formData.currentPassword) {
-        setError("Current password is required");
-        setIsLoading(false);
-        return;
+        validationErrors.push("Current password is required.");
       }
-      
+      if (formData.newPassword.length < 6) {
+        validationErrors.push("Password must be at least 6 characters long.");
+      }
       if (formData.newPassword !== formData.confirmPassword) {
-        setError("New passwords do not match");
-        setIsLoading(false);
-        return;
+        validationErrors.push("New passwords do not match.");
       }
     }
-
+  
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join("\n"));
+      setIsLoading(false);
+      setTimeout(() => setError(""), 5000);
+      return;
+    }
+  
     try {
-      // First verify auth to get current user ID
-      const authResponse = await fetch(`http://localhost:8080/api/auth/verify`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!authResponse.ok) {
-        navigate('/login');
-        return;
-      }
-
-      const authData = await authResponse.json();
-      if (!authData.authenticated || !authData.user || !authData.user.id) {
-        navigate('/login');
-        return;
-      }
-
-      const userId = authData.user.id;
-
-      // Create FormData for file upload
+      const userId = user?.id;
+  
       const data = new FormData();
-      
-      // Calculate age from birthdate
       const age = formData.birthdate ? calculateAge(formData.birthdate) : null;
-      
-      // Add all form fields
+  
       const fieldsToAdd = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
         phone: formData.phone,
         birthdate: formData.birthdate,
         ...(age !== null ? { age } : {}),
         skills: formData.skills
       };
-      
-      // Add password fields if changing password
+  
       if (changePassword && formData.currentPassword && formData.newPassword) {
         fieldsToAdd.currentPassword = formData.currentPassword;
         fieldsToAdd.password = formData.newPassword;
       }
-
-      // Add fields to FormData
+  
       Object.keys(fieldsToAdd).forEach(key => {
         if (key === "skills") {
           data.append(key, JSON.stringify(fieldsToAdd[key]));
@@ -276,8 +213,7 @@ const ProfilePage = () => {
           data.append(key, fieldsToAdd[key]);
         }
       });
-
-      // Add profile picture if selected
+  
       if (selectedFile) {
         data.append("profileImage", selectedFile);
       }
@@ -287,13 +223,12 @@ const ProfilePage = () => {
         credentials: "include",
         body: data
       });
-
+  
       if (response.ok) {
         const updatedUser = await response.json();
         setUser(updatedUser);
         setSuccess("Profile updated successfully");
-        
-        // Reset password fields
+  
         setFormData(prevState => ({
           ...prevState,
           currentPassword: "",
@@ -301,14 +236,21 @@ const ProfilePage = () => {
           confirmPassword: ""
         }));
         setChangePassword(false);
-        
+  
         setTimeout(() => setSuccess(""), 5000);
       } else {
         const errorData = await response.json();
-        setError(errorData.message || "Failed to update profile");
+        console.error("Error from /api/users/profile update:", errorData);
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          const detailedErrors = errorData.errors.map(err => err.msg).join("\n");
+          setError(detailedErrors);
+        } else {
+          setError(errorData.message || "Failed to update profile");
+        }
         setTimeout(() => setError(""), 5000);
       }
     } catch (error) {
+      console.error("Update error:", error);
       setError("An error occurred. Please try again.");
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -491,11 +433,10 @@ const ProfilePage = () => {
                   <input
                     type="email"
                     name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
+                    value={user?.email}
                     className="w-full bg-gray-900/50 border border-[#23A49B]/30 rounded-lg pl-10 p-3 text-white focus:outline-none focus:border-[#23A49B] transition-colors"
                     placeholder="Email"
-                    required
+                    disabled
                   />
                 </div>
               </div>
@@ -553,7 +494,6 @@ const ProfilePage = () => {
                       type="text"
                       name="position"
                       value={user?.position}
-                      onChange={handleInputChange}
                       className="w-full bg-gray-900/50 border border-[#23A49B]/30 rounded-lg pl-10 p-3 text-white focus:outline-none focus:border-[#23A49B] transition-colors"
                       placeholder="Position"
                       disabled

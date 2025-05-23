@@ -12,17 +12,6 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     let updateData = { ...req.body };
     
-    // Check for existing email
-    if (updateData.email) {
-      const existingUser = await User.findOne({ 
-        email: updateData.email, 
-        _id: { $ne: userId } 
-      });
-      
-      if (existingUser) {
-        return res.status(400).json({ message: 'Email is already in use by another account' });
-      }
-    }
         // Check for existing phone
     if (updateData.phone) {
           const existingUser = await User.findOne({ 
@@ -53,7 +42,7 @@ exports.updateProfile = async (req, res) => {
     }
     
     // Fields that should not be updated by the user
-    const restrictedFields = ['role', 'departmentId', 'managerId', 'salary', 'leaveRequestAllowed', 'remainingLeaveDays', 'position'];
+    const restrictedFields = ['role', 'departmentId', 'managerId', 'salary', 'leaveRequestAllowed', 'remainingLeaveDays', 'position', 'email'];
     restrictedFields.forEach(field => delete updateData[field]);
     
     // Update the user data

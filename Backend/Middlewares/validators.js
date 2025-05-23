@@ -115,20 +115,35 @@ const updateProfileValidationRules = [
     .optional()
     .matches(/^[A-Za-z\s]+$/).withMessage('Last name should only contain letters.'),
   
-  body('email')
-    .optional()
-    .isEmail().withMessage('Invalid email format.'),
-  
   body('phone')
     .optional()
-    .matches(/^\d+$/).withMessage('Phone number should only contain numbers.'),
+    .matches(/^\d+$/).withMessage('Phone number should only contain numbers.')
+    .isLength({ min: 8, max: 8 }).withMessage('Phone number must be exactly 8 digits long.'),
   
   body('password')
-    .optional()
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long.'),
+    .if(body('currentPassword').exists())
+    .notEmpty()
+    .withMessage('New password is required when changing password.')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long.'),
+
+   
+  body('birthdate')
+    .custom(value => {
+      const birthdate = new Date(value);
+      const today = new Date();
+      
+      // Remove time part for comparison (set to midnight)
+      today.setHours(0, 0, 0, 0);
+      
+      if (birthdate > today) {
+        throw new Error('Birth date cannot be in the future.');
+      }
+      return true;
+    }),
     
   body('currentPassword')
-    .if(body('password').exists())
+    .optional()
     .notEmpty()
     .withMessage('Current password is required when changing password.')
 ];
