@@ -448,6 +448,9 @@ const CalendarManager = () => {
           case "duration_too_short":
             errorMessage = "Event must be at least 10 minutes long.";
             break;
+            case "start_time_in_past":
+          errorMessage = "Start time cannot be in the past.";
+          break;
           case "missing_meeting_description":
             errorMessage = "Description is required for meetings.";
             break;
@@ -519,6 +522,7 @@ const handleDeleteEvent = async () => {
         text: "Event has been deleted.",
         icon: "success",
         background: "#1E1E1E",
+        confirmButtonColor: "#3baca5",
         color: "#fff"
       });
       
@@ -1243,7 +1247,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                 <form onSubmit={handleSubmitEvent}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium text-gray-400 block mb-2">Title</label>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">Title <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         required
@@ -1254,7 +1258,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-400 block mb-2">Event Type</label>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">Event Type <span className="text-red-500">*</span></label>
                       <select
                         value={eventForm.eventType}
                         onChange={(e) => setEventForm({...eventForm, eventType: e.target.value})}
@@ -1267,7 +1271,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-400 block mb-2">Visibility</label>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">Visibility <span className="text-red-500">*</span></label>
                       <select
                         value={eventForm.visibility}
                         onChange={(e) => setEventForm({...eventForm, visibility: e.target.value})}
@@ -1280,7 +1284,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-400 block mb-2">Start Date & Time</label>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">Start Date & Time <span className="text-red-500">*</span></label>
                       <DatePicker
                         selected={startDate}
                         onChange={(date) => {
@@ -1289,11 +1293,12 @@ const handleUpdateAttendeeStatus = async (status) => {
                         }}
                         showTimeSelect
                         dateFormat="MMMM d, yyyy h:mm aa"
+                        minDate={new Date()}
                         className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3baca5]"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-400 block mb-2">End Date & Time</label>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">End Date & Time <span className="text-red-500">*</span></label>
                       <DatePicker
                         selected={endDate}
                         onChange={(date) => {
@@ -1306,7 +1311,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium text-gray-400 block mb-2">Description</label>
+                      <label className="text-sm font-medium text-gray-400 block mb-2">Description <span className="text-red-500">*</span></label>
                       <textarea
                         value={eventForm.description}
                         onChange={(e) => setEventForm({...eventForm, description: e.target.value})}
@@ -1316,7 +1321,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     
                     {eventForm.eventType === "mission" && (
                       <div>
-                        <label className="text-sm font-medium text-gray-400 block mb-2">Destination</label>
+                        <label className="text-sm font-medium text-gray-400 block mb-2">Destination <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={eventForm.destination}
@@ -1330,7 +1335,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     <>
                       <div>
                         <label className="text-sm font-medium text-gray-400 block mb-2">
-                          Resource Type
+                          Resource Type <span className="text-red-500">*</span>
                         </label>
                         {loadingResourceTypes ? (
                           <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
@@ -1353,7 +1358,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                       </div>
 
                       <div>
-                        <label className="text-sm font-medium text-gray-400 block mb-2">Resource</label>
+                        <label className="text-sm font-medium text-gray-400 block mb-2">Resource <span className="text-red-500">*</span></label>
                         <div className="relative">
                           {loadingResources ? (
                             <div className="w-full bg-[#242424] border border-gray-800 rounded-lg px-3 py-2 flex items-center">
@@ -1390,7 +1395,7 @@ const handleUpdateAttendeeStatus = async (status) => {
                     
                     {(eventForm.eventType === "meeting") && (
                       <div>
-                        <label className="text-sm font-medium text-gray-400 block mb-2">Location</label>
+                        <label className="text-sm font-medium text-gray-400 block mb-2">Location <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={eventForm.location}

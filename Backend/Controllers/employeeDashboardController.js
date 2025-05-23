@@ -100,17 +100,22 @@ exports.getEmployeeDashboardData = async (req, res) => {
 // Helper function to count workdays in a date range (excluding weekends)
 function countWorkdaysInRange(startDate, endDate) {
   let count = 0;
+
+  // Clone and normalize dates to midnight
   const currentDate = new Date(startDate);
+  currentDate.setHours(0, 0, 0, 0);
   
-  while (currentDate <= endDate) {
-    // 0 = Sunday, 6 = Saturday
+  const normalizedEndDate = new Date(endDate);
+  normalizedEndDate.setHours(0, 0, 0, 0);
+
+  while (currentDate <= normalizedEndDate) {
     const dayOfWeek = currentDate.getDay();
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
       count++;
     }
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  
+
   return count;
 }
 
@@ -128,25 +133,6 @@ function getEndOfDay(date) {
   const end = new Date(date);
   end.setHours(23, 59, 59, 999);
   return end;
-}
-
-// Helper function to get working days in a month (excludes weekends)
-function getWorkingDaysInMonth(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  
-  let workingDays = 0;
-  for (let day = 1; day <= lastDay; day++) {
-    const currentDate = new Date(year, month, day);
-    const dayOfWeek = currentDate.getDay();
-    // 0 is Sunday, 6 is Saturday
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      workingDays++;
-    }
-  }
-  
-  return workingDays;
 }
 
 // Helper function to get used leave days in a period
@@ -225,26 +211,33 @@ async function getTeamInfo(userId) {
 // ===== ATTENDANCE METRICS FUNCTIONS =====
 
 async function getAttendanceRate(userId, startDate, endDate) {
+  // Normalize startDate and endDate to midnight
+  startDate = new Date(startDate);
+  startDate.setHours(0, 0, 0, 0);
+  
+  endDate = new Date(endDate);
+  endDate.setHours(0, 0, 0, 0);
+
   // Get all attendance records for the user
   const attendanceRecords = await Attendance.find({
     userId: userId,
     date: { $gte: startDate, $lte: endDate }
   });
-  
+
   // Calculate workdays in range (excluding weekends)
   const workdays = countWorkdaysInRange(startDate, endDate);
-  
+
   // Initialize counters for different attendance statuses
   let presentDays = 0;
   let lateDays = 0;
   let absentDays = 0;
-  
+
   // Create a map of dates with attendance records
   const attendanceMap = {};
-  
+
   attendanceRecords.forEach(record => {
     const dateStr = record.date.toISOString().split('T')[0];
-    
+
     // Map status directly from the record
     if (record.status === 'Present') {
       attendanceMap[dateStr] = 'Present';
@@ -257,44 +250,43 @@ async function getAttendanceRate(userId, startDate, endDate) {
       absentDays++;
     }
   });
-  
+
   // Fill in all workdays in the range with status data
   const trend = [];
   const currentDate = new Date(startDate);
   while (currentDate <= endDate) {
     const dateStr = currentDate.toISOString().split('T')[0];
     const dayOfWeek = currentDate.getDay();
-    
+
     // Only include workdays (skip weekends)
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      // If we have an attendance record for this date, use it, otherwise mark as absent
       if (!attendanceMap[dateStr]) {
         absentDays++;
       }
-      
+
       trend.push({
         date: dateStr,
         status: attendanceMap[dateStr] || 'Absent'
       });
     }
-    
+
     // Move to next day
     currentDate.setDate(currentDate.getDate() + 1);
   }
-  
+
   // Sort by date
   trend.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
+
   // Create summary data for donut chart
   const statusSummary = [
     { name: 'Present', value: presentDays, color: '#23A49B' },
     { name: 'Late', value: lateDays, color: '#F59E0B' },
     { name: 'Absent', value: absentDays, color: '#EF4444' }
   ];
-  
+
   // Calculate attendance rate (counting late as half present)
   const attendanceRate = workdays > 0 ? ((presentDays + (lateDays * 0.5)) / workdays) * 100 : 0;
-  
+
   return {
     rate: parseFloat(attendanceRate.toFixed(2)),
     presentDays,
@@ -305,6 +297,7 @@ async function getAttendanceRate(userId, startDate, endDate) {
     statusSummary
   };
 }
+
 
 async function getPunctualityScore(userId, startDate, endDate) {
   // Get all attendance records for the user
@@ -533,6 +526,7 @@ async function getLeaveRequestStatus(userId) {
     counts,
   };
 }
+
 async function getLeaveCalendar(startDate, endDate) {
   // Find ALL approved leaves in the date range for the calendar view
   const allLeaves = await LeaveRequest.find({
@@ -970,4 +964,24 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     }
   };
 }
+
+// Helper function to get working days in a month (excludes weekends)
+function getWorkingDaysInMonth(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  
+  let workingDays = 0;
+  for (let day = 1; day <= lastDay; day++) {
+    const currentDate = new Date(year, month, day);
+    const dayOfWeek = currentDate.getDay();
+    // 0 is Sunday, 6 is Saturday
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      workingDays++;
+    }
+  }
+  
+  return workingDays;
+}
+
 module.exports = exports;

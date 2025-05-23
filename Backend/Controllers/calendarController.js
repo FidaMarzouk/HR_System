@@ -9,12 +9,15 @@ const { sendNotificationToUser, sendNotificationToRole } = require('../Middlewar
 const validateEventDuration = (startDateTime, endDateTime) => {
   const start = new Date(startDateTime);
   const end = new Date(endDateTime);
+  const now = new Date(); // Current date and time
   const minimumDuration = 10 * 60 * 1000; // 10 minutes in milliseconds
   
   if (start >= end) {
     return { valid: false, status: 'invalid_dates' };
   }
-  
+  if (start < now) {
+    return { valid: false, status: 'start_time_in_past' };
+  }
   if ((end - start) < minimumDuration) {
     return { valid: false, status: 'duration_too_short' };
   }
@@ -450,7 +453,7 @@ exports.adminReviewEvent = async (req, res) => {
     
     await sendNotificationToUser(updatedEvent.createdBy._id, {
       title: `Event ${status === 'approved' ? 'Approved' : 'Declined'}`,
-      message: `Your event "${updatedEvent.title}" has been ${status} by ${admin.firstName} ${admin.lastName}}`,
+      message: `Your event "${updatedEvent.title}" has been ${status} by the administrator`,
       type: 'event_response',
       relatedId: updatedEvent._id
     });
