@@ -476,7 +476,16 @@ exports.adminReviewEvent = async (req, res) => {
 exports.getUsersInvolved = async (req, res) => {
   try {
     const currentUserId = req.user.id;
+    const visibility = req.query.visibility; // Get visibility from query parameters
+    const currentUser = await User.findById(currentUserId);
+
     let query = { _id: { $ne: currentUserId } }; // Always exclude current user
+
+    // If visibility is 'department', exclude users from the same department
+    if (visibility === 'department' && currentUser.departmentId) {
+      query.departmentId = { $ne: currentUser.departmentId };
+    }
+
     const users = await User.find(query)
       .select("-password")
       .populate({

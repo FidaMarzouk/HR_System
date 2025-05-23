@@ -98,7 +98,6 @@ const CalendarManager = () => {
     getCurrentUser();
     fetchEvents();
     fetchDepartments();
-    fetchUsers();
   }, [currentDate, viewMode]);
 
   // Event form state
@@ -195,6 +194,11 @@ const CalendarManager = () => {
     }
   }, [events, filters]);
 
+  useEffect(() => {
+    if (showEventModal) {
+      fetchUsers();
+    }
+  }, [showEventModal, eventForm.visibility]);
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
@@ -241,8 +245,13 @@ const CalendarManager = () => {
 
   const fetchUsers = async () => {
     try {
+      const params = {};
+      if (showEventModal) {
+        params.visibility = eventForm.visibility; // Only include visibility when modal is open
+      }
       const response = await axios.get("http://localhost:8080/api/calendar", {
-        withCredentials: true
+        withCredentials: true,
+        params
       });
       const filteredUsers = response.data.users;
       setUsersList(filteredUsers);
