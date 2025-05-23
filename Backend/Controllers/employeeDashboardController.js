@@ -135,13 +135,13 @@ function getEndOfDay(date) {
   return end;
 }
 
-// Helper function to get used leave days in a period
+// Helper function to get used leave days in a period (used for performance)
 async function getUsedLeaveDays(userId, startDate, endDate) {
   const approvedLeaves = await LeaveRequest.find({
     employeeId: userId,
     startDate: { $lte: endDate },
     endDate: { $gte: startDate },
-    status: { $in: ['Manager Approved', 'Admin Approved'] }
+    status: { $in: ['Manager Approved', 'Admin Approved', 'CEO Approved'] }
   });
   
   let totalLeaveDays = 0;
@@ -209,7 +209,7 @@ async function getTeamInfo(userId) {
 }
 
 // ===== ATTENDANCE METRICS FUNCTIONS =====
-
+// used for attendance rate card
 async function getAttendanceRate(userId, startDate, endDate) {
   // Normalize startDate and endDate to midnight
   startDate = new Date(startDate);
@@ -297,20 +297,19 @@ async function getAttendanceRate(userId, startDate, endDate) {
     statusSummary
   };
 }
-
-
+//used for punctuality score card
 async function getPunctualityScore(userId, startDate, endDate) {
   // Get all attendance records for the user
   const attendanceRecords = await Attendance.find({
     userId: userId,
-    date: { $gte: startDate, $lte: endDate }
-    // Removed status: 'Present' filter to include Late records
+    date: { $gte: startDate, $lte: endDate },
+    status: { $ne: 'Absent' }
   });
 
-  // Count total recorded days
+  // Count number of attendance records found
   const totalDays = attendanceRecords.length;
   
-  // Count on-time arrivals
+  // Count on-time arrivals Records where lateBy is 0 or absent
   const onTimeArrivals = attendanceRecords.filter(record =>
     !record.lateBy || record.lateBy === 0
   ).length;
@@ -343,14 +342,19 @@ async function getPunctualityScore(userId, startDate, endDate) {
   lateTrend.sort((a, b) => new Date(a.date) - new Date(b.date));
   
   return {
+    //Punctuality score rounded to 2 decimal places.
     score: parseFloat(punctualityScore.toFixed(2)),
+    //Count of on-time days
     onTimeArrivals,
+    //Count of late days
     lateArrivals,
+    //Average late minutes, rounded to 2 decimal places
     averageLateMinutes: parseFloat(avgLateMinutes.toFixed(2)),
+    //Sorted array of late arrival details.
     lateTrend
   };
 }
-
+//used for production hours card
 async function getProductionHoursTrend(userId, startDate, endDate) {
   // Get all attendance records for the user
   const attendanceRecords = await Attendance.find({
@@ -408,9 +412,13 @@ async function getProductionHoursTrend(userId, startDate, endDate) {
   weeklyTrend.sort((a, b) => a.week.localeCompare(b.week));
   
   return {
+    //Sorted array of daily production hours
     dailyTrend,
+    //Sorted array of weekly summaries.
     weeklyTrend,
+    //Average hours per present day
     averageProductionHours: parseFloat(averageHours.toFixed(2)),
+    //Total hours
     totalProductionHours: parseFloat(totalHours.toFixed(2))
   };
 }
@@ -477,15 +485,20 @@ async function getOvertimeHours(userId, startDate, endDate) {
 
 // ===== LEAVE METRICS FUNCTIONS =====
 
+// used for: leave balance card
 async function getLeaveBalanceIndicator(userId) {
   // Get user data with leave information
   const userData = await User.findById(userId);
   
   if (!userData || typeof userData.leaveRequestAllowed === 'undefined' || typeof userData.remainingLeaveDays === 'undefined') {
     return {
+      //Total leave days allocated
       totalAllowed: 0,
+      //Remaining leave days.
       remaining: 0,
+      //Used leave days
       used: 0,
+      //Percentage used
       percentageUsed: 0
     };
   }
@@ -504,10 +517,12 @@ async function getLeaveBalanceIndicator(userId) {
 }
 
 async function getLeaveRequestStatus(userId) {
-  // Get all leave requests for the user
   const leaveRequests = await LeaveRequest.find({ employeeId: userId });
-  
-  // Count requests by status
+
+  if (leaveRequests.length === 0) {
+    return null; // No data to chart
+  }
+
   const counts = {
     Pending: 0,
     'Manager Approved': 0,
@@ -515,16 +530,14 @@ async function getLeaveRequestStatus(userId) {
     'Admin Approved': 0,
     'Admin Rejected': 0,
   };
-  
+
   leaveRequests.forEach(request => {
     if (counts[request.status] !== undefined) {
       counts[request.status]++;
     }
   });
-  
-  return {
-    counts,
-  };
+
+  return { counts };
 }
 
 async function getLeaveCalendar(startDate, endDate) {
@@ -815,7 +828,7 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     // Calculate working days in month (excluding weekends)
     const workingDays = getWorkingDaysInMonth(monthStart);
     
-    // Get leave days used in the month
+    // Retrieves approved leave days for the month
     const leaveDays = await getUsedLeaveDays(userId, monthStart, monthEnd);
     
     // Calculate attendance metrics
@@ -843,12 +856,12 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     // Expected production hours (8 hours per working day minus leave days)
     const expectedProductionHours = expectedWorkDays * 8;
     
-    // Calculate productivity rate
+    // Calculates productivity rate (% of expected hours achieved)
     const productivityRate = expectedProductionHours > 0 
       ? (totalProductionHours / expectedProductionHours) * 100 
       : 0;
     
-    // Get completed calendar events
+    // Get completed calendar events: Counts approved calendar events created by or involving the user
     const completedEvents = await CalendarEvent.countDocuments({
       $or: [
         { createdBy: userId },
@@ -914,12 +927,21 @@ async function getEmployeePerformance(userId, startDate, endDate) {
       const lastYearProductivityRate = lastYearExpectedHours > 0 
         ? (lastYearProductionHours / lastYearExpectedHours) * 100 
         : 0;
+
+        const lastYearCompletedEvents = await CalendarEvent.countDocuments({
+          $or: [
+            { createdBy: userId },
+            { 'usersInvolved.userId': userId, 'usersInvolved.status': 'accepted' }
+          ],
+          startDateTime: { $gte: lastYearMonth, $lte: lastYearMonthEnd },
+          status: 'approved'
+        });
       
       const lastYearPerformanceScore = Math.round(
         (lastYearAttendanceRate * 0.3) +
         (lastYearPunctualityRate * 0.2) +
         (lastYearProductivityRate * 0.4) +
-        100 * 0.1 // Placeholder for last year's task completion
+        (lastYearCompletedEvents > 3 ? 100 : lastYearCompletedEvents * 25) * 0.1
       );
       
       previousYearData.push({
@@ -948,9 +970,13 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     : 0;
   
   return {
+    //Overall performance score (average of monthly scores, 0–100)
     score: overallScore,
+    //Array of monthly performance data (score, production hours, attendance, punctuality)
     trend: performanceTrend,
+    //Year-over-year performance change percentage
     vsLastYear: changePercentage,
+    //Array of previous year’s monthly scores
     previousYearData: previousYearData,
     details: {
       totalProductionHours: performanceTrend.reduce((sum, month) => sum + month.productionHours, 0),

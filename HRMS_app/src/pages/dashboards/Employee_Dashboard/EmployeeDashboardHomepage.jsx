@@ -636,7 +636,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             </div>
           </div>
 
-            {/* Punctuality Trend */}
+            {/* Late Minutes Trend */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Late Minutes Trend</Typography>
               <div className="h-80">
@@ -785,55 +785,60 @@ const CustomTooltip = ({ active, payload, label }) => {
 
             {/* Leave Requests Status */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography variant="h5" className="text-white mb-4">Leave Request Status</Typography>
+            <Typography variant="h5" className="text-white mb-4">Leave Request Status</Typography>
+
+            {dashboardData.leaveMetrics?.leaveRequestStatus?.counts &&
+            Object.values(dashboardData.leaveMetrics.leaveRequestStatus.counts).some(count => count > 0) ? (
               <div className="h-64 flex">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart margin={{ right: 0 }}>
                     <Pie
-                      data={Object.entries(dashboardData.leaveMetrics?.leaveRequestStatus?.counts || {}).map(([key, value]) => ({ status: key, count: value }))}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="count"
-                      nameKey="status"
-                      stroke={colors.background}
-                      strokeWidth={2}
-                    >
-                      {Object.entries(dashboardData.leaveMetrics?.leaveRequestStatus?.counts || {}).map(([key, value], index) => {
-                        const statusColorMap = {
-                          'Pending': 1,
-                          'Manager Approved': 0,
-                          'Manager Rejected': 2,
-                          'Admin Approved': 4,
-                          'Admin Rejected': 5
-                        };
-                        const colorIndex = statusColorMap[key] !== undefined ? statusColorMap[key] : index % colors.chartColors.length;
-                        return <Cell key={`cell-${index}`} fill={colors.chartColors[colorIndex]} />;
-                      })}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
-                      labelStyle={{ color: colors.text }}
-                      itemStyle={{ color: colors.text }}
-                    />
-                    <Legend
-                      layout="vertical"
-                      verticalAlign="middle"
-                      align="right"
-                      iconType="circle"
-                      wrapperStyle={{
-                        paddingLeft: 0,
-                        paddingRight: 0,
-                        right: -5
-                      }}
-                      formatter={(value) => <span style={{ color: colors.textSecondary }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+                    data={Object.entries(dashboardData.leaveMetrics.leaveRequestStatus.counts).map(([key, value]) => ({ status: key, count: value }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="count"
+                    nameKey="status"
+                    stroke={colors.background}
+                    strokeWidth={2}
+                  >
+                    {Object.entries(dashboardData.leaveMetrics.leaveRequestStatus.counts).map(([key, _value], index) => {
+                      const statusColorMap = {
+                        'Pending': 1,
+                        'Manager Approved': 0,
+                        'Manager Rejected': 2,
+                        'Admin Approved': 4,
+                        'Admin Rejected': 5
+                      };
+                      const colorIndex = statusColorMap[key] !== undefined ? statusColorMap[key] : index % colors.chartColors.length;
+                      return <Cell key={`cell-${index}`} fill={colors.chartColors[colorIndex]} />;
+                    })}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
+                    labelStyle={{ color: colors.text }}
+                    itemStyle={{ color: colors.text }}
+                  />
+                  <Legend
+                    layout="vertical"
+                    verticalAlign="middle"
+                    align="right"
+                    iconType="circle"
+                    wrapperStyle={{ right: -5 }}
+                    formatter={(value) => <span style={{ color: colors.textSecondary }}>{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-64 flex items-center justify-center text-white text-lg">
+          No leave data available
+        </div>
+      )}
             </div>
+
 
               {/*Leave Calendar */}
               <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
