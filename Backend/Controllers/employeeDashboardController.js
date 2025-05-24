@@ -128,13 +128,6 @@ function getWeekNumber(date) {
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
-// Helper function to get end of day from a date
-function getEndOfDay(date) {
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-  return end;
-}
-
 // Helper function to get used leave days in a period (used for performance)
 async function getUsedLeaveDays(userId, startDate, endDate) {
   const approvedLeaves = await LeaveRequest.find({
@@ -515,7 +508,7 @@ async function getLeaveBalanceIndicator(userId) {
     percentageUsed: parseFloat(percentageUsed.toFixed(2))
   };
 }
-
+// used for Leave Request Status chart
 async function getLeaveRequestStatus(userId) {
   const leaveRequests = await LeaveRequest.find({ employeeId: userId });
 
@@ -567,6 +560,7 @@ async function getLeaveCalendar(startDate, endDate) {
       
       leavesByDay[dateKey].push({
         id: leave._id,
+        //A string combining the employee’s firstName and lastName
         employee: `${leave.employeeId.firstName} ${leave.employeeId.lastName}`,
         reason: leave.reason,
         status: leave.status
@@ -704,15 +698,28 @@ async function getCalendarDensity(userId, startDate, endDate) {
     const dateStr = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
     const dayStart = new Date(currentDate);
     dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = getEndOfDay(currentDate); 
+    const dayEnd = new Date(currentDate);
+    dayEnd.setHours(23, 59, 59, 999);
     
     // Count events for this day
     const eventCount = await CalendarEvent.countDocuments({
-      $or: [
-        { 'usersInvolved.userId': userObjectId },
-        { 'createdBy': userObjectId }
-      ],
       $and: [
+        {
+          $or: [
+            { createdBy: userObjectId },
+            {
+              usersInvolved: {
+                $elemMatch: {
+                  userId: userObjectId,
+                  status: 'accepted'
+                }
+              }
+            }
+          ]
+        },
+        {
+          status: 'approved'
+        },
         {
           $or: [
             // Events that start on this day
@@ -720,13 +727,14 @@ async function getCalendarDensity(userId, startDate, endDate) {
             // Events that end on this day
             { endDateTime: { $gte: dayStart, $lte: dayEnd } },
             // Events that span over this day
-            { $and: [
-              { startDateTime: { $lte: dayStart } },
-              { endDateTime: { $gte: dayEnd } }
-            ]}
+            {
+              $and: [
+                { startDateTime: { $lte: dayStart } },
+                { endDateTime: { $gte: dayEnd } }
+              ]
+            }
           ]
-        },
-        { status: { $ne: 'declined' } }
+        }
       ]
     });
     
@@ -792,7 +800,7 @@ async function getHourlyDistribution(userObjectId, startDate, endDate) {
 }
 
 // ===== PERFORMANCE METRICS FUNCTIONS =====
-
+//used for performance chart
 async function getEmployeePerformance(userId, startDate, endDate) {
   // Clone the dates to avoid modifying the originals
   const start = new Date(startDate);
@@ -991,7 +999,7 @@ async function getEmployeePerformance(userId, startDate, endDate) {
   };
 }
 
-// Helper function to get working days in a month (excludes weekends)
+// Helper function to get working days in a month (excludes weekends)(used for getemployeeperformance)
 function getWorkingDaysInMonth(date) {
   const year = date.getFullYear();
   const month = date.getMonth();

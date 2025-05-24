@@ -740,10 +740,10 @@ const CustomTooltip = ({ active, payload, label }) => {
         {/* Leave Section */}
         {activeSection === "leave" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Leave Balance */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
+            {/* Leave Balance pie chart*/}
+            <div className="bg-gray-800/50 rounded-2xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Leave Balance</Typography>
-              <div className="h-64">
+              <div className="aspect-[3/1] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -753,9 +753,8 @@ const CustomTooltip = ({ active, payload, label }) => {
                       ]}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
+                      labelLine={true}
                       outerRadius={80}
-                      fill="#8884d8"
                       dataKey="value"
                       nameKey="name"
                       label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
@@ -783,26 +782,25 @@ const CustomTooltip = ({ active, payload, label }) => {
               </div>
             </div>
 
-            {/* Leave Requests Status */}
-            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
+            {/* Leave Requests Status pie chart*/}
+            <div className="bg-gray-800/50 lg:col-span-2  rounded-2xl border border-[#23A49B]/30 p-6">
             <Typography variant="h5" className="text-white mb-4">Leave Request Status</Typography>
 
             {dashboardData.leaveMetrics?.leaveRequestStatus?.counts &&
             Object.values(dashboardData.leaveMetrics.leaveRequestStatus.counts).some(count => count > 0) ? (
-              <div className="h-64 flex">
+              <div className="aspect-[3/1] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart margin={{ right: 0 }}>
                     <Pie
                     data={Object.entries(dashboardData.leaveMetrics.leaveRequestStatus.counts).map(([key, value]) => ({ status: key, count: value }))}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
+                    innerRadius={50}
+                    outerRadius={90}
                     dataKey="count"
                     nameKey="status"
-                    stroke={colors.background}
-                    strokeWidth={2}
+                    stroke={colors.text}
+                    strokeWidth={1}
                   >
                     {Object.entries(dashboardData.leaveMetrics.leaveRequestStatus.counts).map(([key, _value], index) => {
                       const statusColorMap = {
@@ -839,24 +837,9 @@ const CustomTooltip = ({ active, payload, label }) => {
       )}
             </div>
 
-
               {/*Leave Calendar */}
-              <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-            <Typography className="text-white text-lg font-bold mb-4">Leave Calendar</Typography>
-            
-            <div className="mb-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex items-center">
-                    <span className="inline-block w-3 h-3 bg-[#0bbfb3] rounded-full mr-2"></span>
-                    <span className="text-gray-400 text-sm">CEO Approved</span>
-                </div>
-                <div className="flex items-center">
-                    <span className="inline-block w-3 h-3 bg-[#4682B4] rounded-full mr-2"></span>
-                    <span className="text-gray-400 text-sm">Admin Approved</span>
-                </div>
-                </div>
-            </div>
-            
+              <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 rounded-2xl border border-[#23A49B]/30 p-6">
+            <Typography className="text-white text-lg font-bold mb-4">Leave Calendar</Typography>  
                 <div className="overflow-x-auto">
                 {/* Calendar Header - Month and Navigation */}
                 <div className="flex justify-between items-center mb-4">
@@ -925,7 +908,6 @@ const CustomTooltip = ({ active, payload, label }) => {
                                     <div 
                                     key={`${leave.id}-${dateStr}`}
                                     className={`text-xs rounded px-1 py-0.5 mb-1 truncate border ${bgColor}`}
-                                    title={`${leave.employee}: ${leave.reason}`}
                                     >
                                     {leave.employee}
                                     </div>
