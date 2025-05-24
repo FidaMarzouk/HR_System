@@ -584,14 +584,7 @@ async function getLeaveCalendar(startDate, endDate) {
 // ===== CALENDAR METRICS FUNCTIONS =====
 
 async function getUpcomingEventsCounter(userId, startDate, endDate) {
-
-  const nextWeek = new Date(startDate);
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  
-  const nextMonth = new Date(startDate);
-  nextMonth.setMonth(nextMonth.getMonth() + 1);
-  
-  // Convert userId to MongoDB ObjectId properly
+  // Convert userId to MongoDB ObjectId
   const userObjectId = new mongoose.Types.ObjectId(userId);
   
   // Get next upcoming events from the given start date
@@ -603,8 +596,10 @@ async function getUpcomingEventsCounter(userId, startDate, endDate) {
     startDateTime: { $gte: startDate },
     status: { $ne: 'declined' }
   })
+  //Sorts results by startDateTime in ascending order (earliest first)
   .sort({ startDateTime: 1 })
-  .select('title eventType startDateTime endDateTime location');
+  //Retrieves only the specified fields for each event
+  .select('title eventType startDateTime endDateTime');
   
   // Format nextEvents to match frontend expectations
   const formattedNextEvents = nextEvents.map(event => ({
@@ -612,8 +607,7 @@ async function getUpcomingEventsCounter(userId, startDate, endDate) {
     title: event.title,
     type: event.eventType, 
     startDate: event.startDateTime,
-    endDate: event.endDateTime,
-    location: event.location || ""
+    endDate: event.endDateTime
   }));
   
   return {
@@ -675,7 +669,7 @@ async function countEventsByType(userObjectId, startDate, endDate) {
     };
   }
 }
-
+//used for calendar density chart
 async function getCalendarDensity(userId, startDate, endDate) {
   // Convert userId to MongoDB ObjectId properly
   const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -687,7 +681,7 @@ async function getCalendarDensity(userId, startDate, endDate) {
   // Ensure start date is at beginning of day
   start.setHours(0, 0, 0, 0);
   
-  // Ensure end date is at end of day
+  // Ensure end date is at end of day to include all events within the day
   end.setHours(23, 59, 59, 999);
   
   // Create day buckets for the date range
@@ -757,49 +751,67 @@ async function getCalendarDensity(userId, startDate, endDate) {
   const totalEvents = density.reduce((sum, day) => sum + day.count, 0);
   
   return {
+    //Array of daily event counts used for calendar density chart
     dailyDensity: density,
+    //Result from getHourlyDistribution
     busyHoursDistribution,
+    //Number of days with more than 3 events used for calendar density metric
     busyDays,
+    //Total number of events in the date range used for calendar density metric
     totalEvents
   };
 }
-
+//used for Busy Hours Distribution chart
 async function getHourlyDistribution(userObjectId, startDate, endDate) {
   // Initialize hours array (0-23)
   const hourCounts = new Array(24).fill(0);
   
-  // Get all events in the date range
+  // Get all approved events in the date range
   const events = await CalendarEvent.find({
     $or: [
-      { 'usersInvolved.userId': userObjectId },
+      {
+        usersInvolved: {
+          $elemMatch: {
+            userId: userObjectId,
+            status: 'accepted'
+          }
+        }
+      },
       { 'createdBy': userObjectId }
     ],
     startDateTime: { $gte: startDate, $lte: endDate },
-    status: { $ne: 'declined' }
+    status: { $in: 'approved' }
   });
   
   // Count events by hour of day
   events.forEach(event => {
+    //Extracts the hour (0–23) from event.startDateTime
     const hour = event.startDateTime.getHours();
+    //Increments the count in hourCounts for that hour
     hourCounts[hour]++;
   });
   
   // Format for chart display as expected by frontend
   return hourCounts.map((count, hour) => {
-    // Format hours in a way that will display correctly on frontend
+    //Formats the hour as a string
     const formattedHour = `${hour}:00`;
+    //Calculates the next hour to wrap around from 23 to 0
     const nextHour = (hour + 1) % 24;
     const formattedNextHour = `${nextHour}:00`;
     
     return {
+      //The hour number (0–23)
       hour,
+    //Number of events starting in that hour
       count,
+      //A string like 0:00 - 1:00
       timeLabel: `${formattedHour} - ${formattedNextHour}`
     };
   });
 }
 
 // ===== PERFORMANCE METRICS FUNCTIONS =====
+
 //used for performance chart
 async function getEmployeePerformance(userId, startDate, endDate) {
   // Clone the dates to avoid modifying the originals

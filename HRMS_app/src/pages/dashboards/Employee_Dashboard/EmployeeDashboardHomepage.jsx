@@ -44,24 +44,14 @@ const EmployeeDashboardHomePage = () => {
   const [error, setError] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
-  const [departmentLeavesByDay, setDepartmentLeavesByDay] = useState({});
+  const [LeavesByDay, setLeavesByDay] = useState({});
   const [activeSection, setActiveSection] = useState("overview");
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     endDate: new Date()
   });
   const navigate = useNavigate();
-  
-  // Pulse animation for background
-  const pulseAnimation = `
-    @keyframes pulse {
-      0% { opacity: 0.1; }
-      50% { opacity: 0.3; }
-      100% { opacity: 0.1; }
-    }
-  `;
-
-  // Color palette consistent with the HR dashboard theme
+  // Color palette
   const colors = {
     primary: "#23A49B",
     secondary: "#2c8f8a",
@@ -72,13 +62,13 @@ const EmployeeDashboardHomePage = () => {
     textSecondary: "#94a3b8",
     border: "rgba(35, 164, 155, 0.3)",
     chartColors: [
-      "#0bbfb3", // Deep teal (primary brand color from overlay)
-      "#4682B4", // Muted blue (taken from shadows in the image)
-      "#E17372", // Soft coral red (for warnings/errors)
-      "#0D5C63", // Dark cyan (strong contrast, matches robotic elements)
-      "#B2A29E", // Lighter teal (soft but distinct from deep teal)
-      "#D98872", // Warm terracotta (more refined alternative to bright coral)
-      "#E1B382"  // Muted sandy beige (to complement the overall palette)
+      "#0bbfb3", // Deep teal 
+      "#4682B4", // Muted blue 
+      "#E17372", // Soft coral red 
+      "#0D5C63", // Dark cyan 
+      "#B2A29E", // Lighter teal
+      "#D98872", // Warm terracotta 
+      "#E1B382"  // Muted sandy beige
     ]
   };
 
@@ -112,7 +102,7 @@ const EmployeeDashboardHomePage = () => {
     };
     
     fetchDashboardData();
-  }, [dateRange]);
+  }, [dateRange]); //[dateRange] ensures the effect runs when startDate or endDate changes
 
   useEffect(() => {
     // First check if dashboardData exists
@@ -120,9 +110,9 @@ const EmployeeDashboardHomePage = () => {
     
     // Process leave data for calendar view when dashboard data changes
     if (dashboardData.leaveMetrics?.LeaveCalendar) {
-      // Extract leavesByDay from the data - note the correct property name
+      // Extract leavesByDay from the data
       const leavesByDay = dashboardData.leaveMetrics.LeaveCalendar.leavesByDay || {};
-      setDepartmentLeavesByDay(leavesByDay);
+      setLeavesByDay(leavesByDay);
       
       // Generate calendar days array
       generateCalendarDays(calendarMonth);
@@ -167,7 +157,7 @@ const EmployeeDashboardHomePage = () => {
         days.push(nextMonthDate);
       }
       
-      setCalendarDays(days);
+      setCalendarDays(days); //Updates calendarDays state.
     };
     
     // Function to handle month navigation
@@ -741,7 +731,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         {activeSection === "leave" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Leave Balance pie chart*/}
-            <div className="bg-gray-800/50 rounded-2xl border border-[#23A49B]/30 p-6">
+            <div className="bg-gray-800/50 rounded-2xl backdrop-blur-xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Leave Balance</Typography>
               <div className="aspect-[3/1] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -783,7 +773,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             </div>
 
             {/* Leave Requests Status pie chart*/}
-            <div className="bg-gray-800/50 lg:col-span-2  rounded-2xl border border-[#23A49B]/30 p-6">
+            <div className="bg-gray-800/50 lg:col-span-2 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
             <Typography variant="h5" className="text-white mb-4">Leave Request Status</Typography>
 
             {dashboardData.leaveMetrics?.leaveRequestStatus?.counts &&
@@ -838,7 +828,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             </div>
 
               {/*Leave Calendar */}
-              <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-gray-800/50 rounded-2xl border border-[#23A49B]/30 p-6">
+              <div className="col-span-1 md:col-span-2 backdrop-blur-xl lg:col-span-4 bg-gray-800/50 rounded-2xl border border-[#23A49B]/30 p-6">
             <Typography className="text-white text-lg font-bold mb-4">Leave Calendar</Typography>  
                 <div className="overflow-x-auto">
                 {/* Calendar Header - Month and Navigation */}
@@ -876,7 +866,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                     {/* Calendar cells */}
                     {calendarDays.map((day, index) => {
                     const dateStr = day ? day.toISOString().split('T')[0] : '';
-                    const dayLeaves = day ? departmentLeavesByDay[dateStr] || [] : [];
+                    const dayLeaves = day ? LeavesByDay[dateStr] || [] : [];
                     const isWeekend = day && (day.getDay() === 0 || day.getDay() === 6);
                     const isCurrentMonth = day && day.getMonth() === new Date(calendarMonth).getMonth();
                     
@@ -928,14 +918,14 @@ const CustomTooltip = ({ active, payload, label }) => {
 
         {/* Calendar Section */}
         {activeSection === "calendar" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
 
             {/* Calendar Density */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Calendar Density</Typography>
-              <div className="h-64">
+              <div className="aspect-[4/1] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dashboardData.calendarMetrics?.calendarDensity?.dailyDensity || []}>
+                  <BarChart data={dashboardData.calendarMetrics?.calendarDensity?.dailyDensity || []}> 
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                     <XAxis 
                       dataKey="date" 
@@ -972,10 +962,11 @@ const CustomTooltip = ({ active, payload, label }) => {
                 </div>
               </div>
             </div>
+            
             {/* Busy Hours Distribution */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Busy Hours Distribution</Typography>
-              <div className="h-64">
+              <div className="aspect-[4/1] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={dashboardData.calendarMetrics?.calendarDensity?.busyHoursDistribution || []}
                     margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -1022,7 +1013,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Next Events</Typography>
               {dashboardData.calendarMetrics?.upcomingEventsCounter?.nextEvents?.length > 0 ? (
-                <div className="overflow-y-auto max-h-80">
+                <div className="overflow-y-auto aspect-[4/1] w-full">
                   {dashboardData.calendarMetrics.upcomingEventsCounter.nextEvents.map((event, index) => (
                     <div 
                       key={event.id || index} 
@@ -1054,9 +1045,6 @@ const CustomTooltip = ({ active, payload, label }) => {
                             minute: '2-digit'
                           })}
                         </Typography>
-                        {event.location && (
-                          <Typography className="text-gray-400 text-sm">{event.location}</Typography>
-                        )}
                       </div>
                     </div>
                   ))}
