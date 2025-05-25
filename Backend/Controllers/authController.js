@@ -28,8 +28,8 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
 
-    // Set token expiration explicitly - 5 hours in seconds
-    const expiresIn = 5 * 60 * 60; // 5 hours in seconds
+    // Set token expiration explicitly - 8 hours in seconds
+    const expiresIn = 8 * 60 * 60; // 8 hours in seconds
     
     // Generate JWT
     const token = jwt.sign(

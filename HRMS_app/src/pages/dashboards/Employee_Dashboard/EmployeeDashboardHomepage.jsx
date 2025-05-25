@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Typography } from "@material-tailwind/react";
 import CustomDatePicker from '../../../components/ui/datePicker';
 import { 
@@ -50,7 +49,6 @@ const EmployeeDashboardHomePage = () => {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     endDate: new Date()
   });
-  const navigate = useNavigate();
   // Color palette
   const colors = {
     primary: "#23A49B",

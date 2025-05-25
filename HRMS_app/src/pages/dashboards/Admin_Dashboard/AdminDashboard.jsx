@@ -190,7 +190,6 @@ const AdminDashboard = () => {
   
     // Cleanup function - remove ALL listeners
     return () => {
-      console.log('Admin Dashboard: Cleaning up socket listeners for user:', user.id);
       socket.off('connect', handleConnect);
       socket.off('notification', handleNotification);
       socket.off('notificationUpdate', handleNotificationUpdate);

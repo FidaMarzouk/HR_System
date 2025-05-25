@@ -299,7 +299,7 @@ async function getPunctualityScore(userId, startDate, endDate) {
     status: { $ne: 'Absent' }
   });
 
-  // Count number of attendance records found
+  // Count number of attendance records found (only the present and late records)
   const totalDays = attendanceRecords.length;
   
   // Count on-time arrivals Records where lateBy is 0 or absent
@@ -854,14 +854,13 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     // Calculate attendance metrics
     const presentDays = attendanceData.filter(a => a.status === 'Present').length;
     const lateDays = attendanceData.filter(a => a.status === 'Late').length;
-    const absentDays = attendanceData.filter(a => a.status === 'Absent').length;
     
     // Calculate expected working days (adjusted for approved leave)
     const expectedWorkDays = workingDays - leaveDays;
     
     // Calculate attendance rate
     const attendanceRate = expectedWorkDays > 0 
-      ? ((presentDays + lateDays) / expectedWorkDays) * 100 
+      ? ((presentDays + (lateDays*0.5)) / expectedWorkDays) * 100 
       : 0;
     
     // Calculate punctuality rate
@@ -896,7 +895,8 @@ async function getEmployeePerformance(userId, startDate, endDate) {
       (attendanceRate * 0.3) +  // 30% weight for attendance
       (punctualityRate * 0.2) + // 20% weight for punctuality
       (productivityRate * 0.4) + // 40% weight for productivity
-      (completedEvents > 3 ? 100 : completedEvents * 25) * 0.1 // 10% weight for event completion
+      //completing up to 3 events shows increasing engagement with each event worth 25 points
+      (completedEvents > 4 ? 100 : completedEvents * 25) * 0.1 // 10% weight for event completion
     );
     
     // Cap the performance score at 100

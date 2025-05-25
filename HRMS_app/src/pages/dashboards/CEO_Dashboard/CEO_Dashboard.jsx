@@ -208,7 +208,7 @@ const CEODashboard = () => {
           email: response.data.email,
           picture: response.data.picture || '',
           role: response.data.role || 'Chief Executive Officer',
-          id: response.data._id || ''
+          id: response.data.id
         });
       }
     } catch (error) {

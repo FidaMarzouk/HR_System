@@ -307,7 +307,7 @@ const AttendanceManager = () => {
                 confirmButtonColor: '#2dd4bf',
                 confirmButtonText: 'OK',
                 customClass: {
-                    popup: 'rounded-lg shadow-xl',
+                popup: 'rounded-lg shadow-xl',
                     title: 'text-[#2dd4bf]',
                     content: 'text-[#94a3b8]'
                 },

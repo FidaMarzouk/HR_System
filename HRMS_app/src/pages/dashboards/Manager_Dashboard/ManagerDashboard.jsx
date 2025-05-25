@@ -231,7 +231,7 @@ const ManagerDashboard = () => {
           email: response.data.email,
           picture: response.data.picture || '',
           role: response.data.role || 'Department Manager',
-          id: response.data._id || ''
+          id: response.data.id || ''
         });
       }
     } catch (error) {

@@ -79,10 +79,10 @@ const updateProductionHours = async (attendanceId) => {
 exports.punchIn = async (req, res) => {
   try {
     const userId = req.params.userId;
-    
+
     // Use UTC day boundaries
     const { today, tomorrow } = getTodayBoundaries();
-    
+
     // Find today's attendance records for this user
     const todayAttendanceRecords = await Attendance.find({
       userId,
@@ -91,49 +91,28 @@ exports.punchIn = async (req, res) => {
         $lt: tomorrow
       }
     }).sort({ sessionNumber: -1 });
-    
+
     // Determine the new session number
     let sessionNumber = 1;
     if (todayAttendanceRecords.length > 0) {
       sessionNumber = todayAttendanceRecords[0].sessionNumber + 1;
     }
-    
+
     // Get the current time in UTC
     const currentTime = new Date();
-    
+
     // Create new attendance record - store directly as UTC
     const attendance = new Attendance({
       userId,
-      checkIn: currentTime, // Store as UTC time
+      checkIn: currentTime,
       date: today,
       sessionNumber: sessionNumber
     });
-    
-    // Business logic time thresholds in UTC
-    const scheduledStart = createTunisiaTimeThreshold(8, 0); // 8:00 AM Tunisia time
-    const lateThreshold = createTunisiaTimeThreshold(8, 30); // 8:30 AM Tunisia time
-    
-    // Calculate overtime if checked in before scheduled start
-    if (attendance.checkIn < scheduledStart) {
-      const earlyByMinutes = Math.floor((scheduledStart - attendance.checkIn) / (1000 * 60));
-      attendance.earlyBy = earlyByMinutes;
-      attendance.overtime = earlyByMinutes;
-    }
-    
-    // Late check-in logic
-    if (attendance.checkIn > lateThreshold) {
-      const lateByMinutes = Math.floor((attendance.checkIn - lateThreshold) / (1000 * 60));
-      attendance.lateBy = lateByMinutes;
-      attendance.status = 'Late';
-    } else {
-      attendance.status = 'Present';
-    }
-    
+
     // Additional validations - using Tunisia time references (UTC+1)
-    // Convert current UTC hour to Tunisia hour for validation
     const currentHourUTC = attendance.checkIn.getUTCHours();
     const currentHourTunisia = (currentHourUTC + 1) % 24;
-    
+
     // Prevent punch-in outside work hours (between 6 AM and 10 PM Tunisia time)
     if (currentHourTunisia < 6 || currentHourTunisia >= 22) {
       return res.status(400).json({
@@ -141,18 +120,41 @@ exports.punchIn = async (req, res) => {
         status: 'invalid_time'
       });
     }
-    
-    // Production hours are 0 at punch-in (since there's no check-out yet)
+
+    // 🔽 Skip time logic if it's not the first session
+    if (sessionNumber === 1) {
+      const scheduledStart = createTunisiaTimeThreshold(8, 0); // 8:00 AM Tunisia time
+      const lateThreshold = createTunisiaTimeThreshold(8, 30); // 8:30 AM Tunisia time
+
+      if (attendance.checkIn < scheduledStart) {
+        const earlyByMinutes = Math.floor((scheduledStart - attendance.checkIn) / (1000 * 60));
+        attendance.earlyBy = earlyByMinutes;
+        attendance.overtime = earlyByMinutes;
+      }
+
+      if (attendance.checkIn > lateThreshold) {
+        const lateByMinutes = Math.floor((attendance.checkIn - lateThreshold) / (1000 * 60));
+        attendance.lateBy = lateByMinutes;
+        attendance.status = 'Late';
+      } else {
+        attendance.status = 'Present';
+      }
+    } else {
+      // ⬅️ For subsequent sessions, just mark as Present
+      attendance.status = 'Present';
+    }
+
+    // Production hours are 0 at punch-in
     attendance.productionHours = 0;
-    
+
     await attendance.save();
-    
-    // Return the saved data - MongoDB already stored it in UTC
+
     res.status(201).json(attendance);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 exports.punchOut = async (req, res) => {
   try {

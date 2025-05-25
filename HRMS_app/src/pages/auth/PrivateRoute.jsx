@@ -50,11 +50,6 @@ const PrivateRoute = ({ allowedRoles }) => {
     return <Navigate to="/" />;
   }
 
-  // If authenticated but not allowed, redirect to unauthorized
-  if (!allowedRoles.includes(auth.role)) {
-    return <Navigate to="/unauthorized" />;
-  }
-
   // If authenticated and allowed, render the protected route
   return <Outlet />;
 };
