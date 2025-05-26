@@ -824,12 +824,10 @@ async function getEmployeePerformance(userId, startDate, endDate) {
   currentDate.setDate(1); // Start from the first day of month
   
   // Track previous year's data for comparison
-  const previousYearStart = new Date(start);
-  previousYearStart.setFullYear(previousYearStart.getFullYear() - 1);
-  const previousYearEnd = new Date(end);
-  previousYearEnd.setFullYear(previousYearEnd.getFullYear() - 1);
   const previousYearData = [];
-  
+  const monthsWithData = [];
+  const previousMonthsWithData = [];
+
   // Process each month in the range
   while (currentDate <= end) {
     const monthStr = currentDate.toLocaleString('en-US', { month: 'short' });
@@ -895,100 +893,111 @@ async function getEmployeePerformance(userId, startDate, endDate) {
       (attendanceRate * 0.3) +  // 30% weight for attendance
       (punctualityRate * 0.2) + // 20% weight for punctuality
       (productivityRate * 0.4) + // 40% weight for productivity
-      //completing up to 3 events shows increasing engagement with each event worth 25 points
       (completedEvents > 4 ? 100 : completedEvents * 25) * 0.1 // 10% weight for event completion
     );
     
     // Cap the performance score at 100
     const cappedScore = Math.min(100, performanceScore);
     
-    // Push to monthly trend
+    // Only include in score average if there's actual attendance data
+    if (attendanceData.length > 0) {
+      monthsWithData.push({
+        value: cappedScore,
+        attendanceRate: Math.round(attendanceRate),
+        punctualityRate: Math.round(punctualityRate),
+        productionHours: totalProductionHours,
+        expectedHours: expectedProductionHours
+      });
+    }
+
+    // Push to monthly trend (even if there's no data)
     performanceTrend.push({
       month: monthStr,
-      value: cappedScore,
+      value: attendanceData.length > 0 ? cappedScore : 0,
       productionHours: totalProductionHours,
       expectedHours: expectedProductionHours,
       attendanceRate: Math.round(attendanceRate),
       punctualityRate: Math.round(punctualityRate)
     });
-    
+
     // Calculate performance for the same month last year (for comparison)
     const lastYearMonth = new Date(monthStart);
     lastYearMonth.setFullYear(lastYearMonth.getFullYear() - 1);
     const lastYearMonthEnd = new Date(monthEnd);
     lastYearMonthEnd.setFullYear(lastYearMonthEnd.getFullYear() - 1);
-    
-    // Get last year's attendance data
+
     const lastYearAttendance = await Attendance.find({
       userId: userId,
       date: { $gte: lastYearMonth, $lte: lastYearMonthEnd }
     });
-    
+
     if (lastYearAttendance.length > 0) {
       const lastYearPresentDays = lastYearAttendance.filter(a => a.status === 'Present').length;
       const lastYearLateDays = lastYearAttendance.filter(a => a.status === 'Late').length;
       const lastYearWorkingDays = getWorkingDaysInMonth(lastYearMonth);
       const lastYearLeaveDays = await getUsedLeaveDays(userId, lastYearMonth, lastYearMonthEnd);
       const lastYearExpectedDays = lastYearWorkingDays - lastYearLeaveDays;
-      
+
       const lastYearAttendanceRate = lastYearExpectedDays > 0 
         ? ((lastYearPresentDays + lastYearLateDays) / lastYearExpectedDays) * 100 
         : 0;
-      
+
       const lastYearPunctualityRate = (lastYearPresentDays + lastYearLateDays) > 0 
         ? (lastYearPresentDays / (lastYearPresentDays + lastYearLateDays)) * 100 
         : 0;
-      
+
       const lastYearProductionHours = lastYearAttendance.reduce((sum, record) => 
         sum + (record.productionHours || 0), 0);
-      
+
       const lastYearExpectedHours = lastYearExpectedDays * 8;
-      
+
       const lastYearProductivityRate = lastYearExpectedHours > 0 
         ? (lastYearProductionHours / lastYearExpectedHours) * 100 
         : 0;
 
-        const lastYearCompletedEvents = await CalendarEvent.countDocuments({
-          $or: [
-            { createdBy: userId },
-            { 'usersInvolved.userId': userId, 'usersInvolved.status': 'accepted' }
-          ],
-          startDateTime: { $gte: lastYearMonth, $lte: lastYearMonthEnd },
-          status: 'approved'
-        });
-      
+      const lastYearCompletedEvents = await CalendarEvent.countDocuments({
+        $or: [
+          { createdBy: userId },
+          { 'usersInvolved.userId': userId, 'usersInvolved.status': 'accepted' }
+        ],
+        startDateTime: { $gte: lastYearMonth, $lte: lastYearMonthEnd },
+        status: 'approved'
+      });
+
       const lastYearPerformanceScore = Math.round(
         (lastYearAttendanceRate * 0.3) +
         (lastYearPunctualityRate * 0.2) +
         (lastYearProductivityRate * 0.4) +
-        (lastYearCompletedEvents > 3 ? 100 : lastYearCompletedEvents * 25) * 0.1
+        (lastYearCompletedEvents > 4 ? 100 : lastYearCompletedEvents * 25) * 0.1
       );
-      
+
       previousYearData.push({
         month: monthStr,
         value: Math.min(100, lastYearPerformanceScore)
       });
+
+      previousMonthsWithData.push(Math.min(100, lastYearPerformanceScore));
     }
-    
+
     // Move to next month
     currentDate.setMonth(currentDate.getMonth() + 1);
   }
-  
-  // Calculate the overall performance score (average of all months)
-  const overallScore = performanceTrend.length > 0
-    ? Math.round(performanceTrend.reduce((sum, month) => sum + month.value, 0) / performanceTrend.length)
+
+  // Calculate the overall performance score (average of months that had data)
+  const overallScore = monthsWithData.length > 0
+    ? Math.round(monthsWithData.reduce((sum, m) => sum + m.value, 0) / monthsWithData.length)
     : 0;
-  
-  // Calculate previous year's overall score
-  const previousYearScore = previousYearData.length > 0
-    ? Math.round(previousYearData.reduce((sum, month) => sum + month.value, 0) / previousYearData.length)
+
+  // Calculate previous year's overall score (only months with data)
+  const previousYearScore = previousMonthsWithData.length > 0
+    ? Math.round(previousMonthsWithData.reduce((sum, v) => sum + v, 0) / previousMonthsWithData.length)
     : 0;
-  
+
   // Calculate year-over-year change percentage
   const changePercentage = previousYearScore > 0
     ? Math.round(((overallScore - previousYearScore) / previousYearScore) * 100)
     : 0;
-  
+
   return {
     //Overall performance score (average of monthly scores, 0–100)
     score: overallScore,
@@ -999,17 +1008,19 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     //Array of previous year’s monthly scores
     previousYearData: previousYearData,
     details: {
-      totalProductionHours: performanceTrend.reduce((sum, month) => sum + month.productionHours, 0),
-      expectedProductionHours: performanceTrend.reduce((sum, month) => sum + month.expectedHours, 0),
-      averageAttendanceRate: Math.round(
-        performanceTrend.reduce((sum, month) => sum + month.attendanceRate, 0) / performanceTrend.length
-      ),
-      averagePunctualityRate: Math.round(
-        performanceTrend.reduce((sum, month) => sum + month.punctualityRate, 0) / performanceTrend.length
-      )
+      totalProductionHours: monthsWithData.reduce((sum, m) => sum + m.productionHours, 0),
+      expectedProductionHours: monthsWithData.reduce((sum, m) => sum + m.expectedHours, 0),
+      averageAttendanceRate: monthsWithData.length > 0 
+        ? Math.round(monthsWithData.reduce((sum, m) => sum + m.attendanceRate, 0) / monthsWithData.length)
+        : 0,
+      averagePunctualityRate: monthsWithData.length > 0 
+        ? Math.round(monthsWithData.reduce((sum, m) => sum + m.punctualityRate, 0) / monthsWithData.length)
+        : 0
     }
   };
 }
+
+
 
 // Helper function to get working days in a month (excludes weekends)(used for getemployeeperformance)
 function getWorkingDaysInMonth(date) {
