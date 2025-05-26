@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Typography } from "@material-tailwind/react";
 import CustomDatePicker from '../../../components/ui/datePicker';
 import { BarChart, LineChart, PieChart, Bar, Line, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
@@ -12,7 +11,6 @@ import {
   MessageSquare, 
   Briefcase, 
   AlertCircle,
-  MessageCircle,
   Bell,
   User,
 } from "lucide-react";
@@ -26,7 +24,6 @@ const HRDashboardHomepage = () => {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     endDate: new Date()
   });
-  const navigate = useNavigate();
   
   // Color palette 
   const colors = {
@@ -198,6 +195,7 @@ const HRDashboardHomepage = () => {
           <div className="space-y-6">
             {/* Key Statistics Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
               {/* Total Employees Card */}
               <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 flex items-center">
                 <div className="w-14 h-14 rounded-lg bg-[#23A49B]/20 flex items-center justify-center mr-4">
@@ -234,7 +232,8 @@ const HRDashboardHomepage = () => {
             
             {/* Data Visualizations Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Workforce Distribution Chart */}
+
+              {/* Employees by Department Chart */}
               <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 lg:col-span-2">
                 <div className="flex items-center justify-between mb-4">
                   <Typography variant="h5" className="text-white">Employees by Department</Typography>
@@ -265,7 +264,7 @@ const HRDashboardHomepage = () => {
                 </div>
               </div>
               
-              {/* Leave Status Distribution  */}
+              {/* Leave Status Distribution Chart */}
               <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <Typography variant="h5" className="text-white">Leave Status</Typography>
@@ -431,10 +430,19 @@ const HRDashboardHomepage = () => {
                         />
                     <YAxis tick={{ fill: colors.textSecondary }} />
                     <Tooltip
-                          contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
-                          labelStyle={{ color: colors.text }}
-                          labelFormatter={(label) => label} 
-                        />
+                      contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
+                      labelStyle={{ color: colors.text }}
+                      labelFormatter={(label) => label}
+                      formatter={(value, name, props) => {
+                        return [
+                          <>
+                            {value} hours <br />
+                            {props.payload.employeeCount} employees
+                          </>,
+                          "Overtime"
+                        ];
+                      }}
+                    />
                     <Legend wrapperStyle={{ color: colors.textSecondary }} />
                     <Bar dataKey="totalOvertimeHours" name="Overtime Hours" fill={colors.chartColors[3]} radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -467,7 +475,7 @@ const HRDashboardHomepage = () => {
                       <Typography className="text-gray-400 text-sm">Usage</Typography>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="grid grid-cols-3 gap-4 mt-8">
                     <div>
                       <Typography className="text-gray-400 text-sm">Total Allowed</Typography>
                       <Typography variant="h5" className="text-white">
@@ -478,6 +486,12 @@ const HRDashboardHomepage = () => {
                       <Typography className="text-gray-400 text-sm">Total Used</Typography>
                       <Typography variant="h5" className="text-white">
                         {dashboardData.leaveManagement.leaveDaysUsageStats.totalUsed}
+                      </Typography>
+                    </div>
+                    <div>
+                      <Typography className="text-gray-400 text-sm">Total Remaining</Typography>
+                      <Typography variant="h5" className="text-white">
+                        {dashboardData.leaveManagement.leaveDaysUsageStats.totalRemaining}
                       </Typography>
                     </div>
                   </div>

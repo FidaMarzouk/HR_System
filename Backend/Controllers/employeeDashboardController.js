@@ -5,10 +5,10 @@ const Department = require('../Models/Department');
 const CalendarEvent = require('../Models/CalendarEvent');
 const mongoose = require('mongoose');
 
-// Main Employee Dashboard controller (kept as is)
+// Main Employee Dashboard controller
 exports.getEmployeeDashboardData = async (req, res) => {
     try {
-      // Get logged in user ID
+      // Get logged in user ID from authentication middleware
       const userId = req.user.id;
       const today = new Date();
       today.setHours(23, 59, 59, 999); 
@@ -39,26 +39,21 @@ exports.getEmployeeDashboardData = async (req, res) => {
       }
       // Get employee's personal data
       const userData = await User.findById(userId);
-      
-      // Check if user data exists
-      if (!userData) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-     // Get employee's KPIs
+     // Get employee's attendance KPIs
      const attendanceRate = await getAttendanceRate(userId, startDate, endDate);
      const punctualityScore = await getPunctualityScore(userId, startDate, endDate);
      const productionHoursTrend = await getProductionHoursTrend(userId, startDate, endDate);
      const overtimeHours = await getOvertimeHours(userId, startDate, endDate);
-
+     // Get employee's leave KPIs
      const leaveBalanceIndicator = await getLeaveBalanceIndicator(userId);
      const leaveRequestStatus = await getLeaveRequestStatus(userId);
      const LeaveCalendar = await getLeaveCalendar(startDate, endDate);
-    
+    // Get employee's event KPIs
      const upcomingEventsCounter = await getUpcomingEventsCounter(userId, startDate, endDate);
      const calendarDensity = await getCalendarDensity(userId, startDate, endDate);
-     
+     // Get employee's performance KPIs
      const performanceData = await getEmployeePerformance(userId, startDate, endDate);
+     // Get employee's team KPIs
      const teamInfo = await getTeamInfo(userId);
 
       res.status(200).json({
@@ -1019,8 +1014,6 @@ async function getEmployeePerformance(userId, startDate, endDate) {
     }
   };
 }
-
-
 
 // Helper function to get working days in a month (excludes weekends)(used for getemployeeperformance)
 function getWorkingDaysInMonth(date) {

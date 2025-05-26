@@ -43,9 +43,11 @@ exports.getHRDashboardData = async (req, res) => {
       } else {
         endDate = today; 
       }
-    // Get basic company stats
+    // Get employees count (used for total employees card)
     const totalEmployees = await User.countDocuments();
+    // Get departments count (used for total departments card)
     const totalDepartments = await Department.countDocuments();
+    // Get pending requests count (used for Pending Leave Requests card)
     const pendingLeaveRequests = await LeaveRequest.countDocuments({ status: 'Pending' });
     
     // Company-wide Attendance Analytics
@@ -117,7 +119,12 @@ exports.getHRDashboardData = async (req, res) => {
   }
 };
 
+
+
+
 // Helper functions for attendance analytics
+
+//used for attendance by department chart
 async function getAttendanceByDepartment(startDate, endDate) {
   const attendanceData = await Attendance.aggregate([
     {
@@ -137,6 +144,7 @@ async function getAttendanceByDepartment(startDate, endDate) {
       $unwind: '$user'
     },
     {
+      //For each attendance record, finds user documents where users._id matches Attendance.userId
       $lookup: {
         from: 'departments',
         localField: 'user.departmentId',
@@ -159,6 +167,7 @@ async function getAttendanceByDepartment(startDate, endDate) {
     },
     {
       $project: {
+        //1 means "include this field"
         departmentName: 1,
         totalAttendances: 1,
         presentPercentage: { 
@@ -177,6 +186,19 @@ async function getAttendanceByDepartment(startDate, endDate) {
   return attendanceData;
 }
 
+// Utility function to generate a date range (used for getAbsenteeismTrend)
+function getDateRange(startDate, endDate) {
+  const dates = [];
+  const currentDate = new Date(startDate);
+  
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return dates;
+}
+//used for Absenteeism Trend chart in attendance section
 async function getAbsenteeismTrend(startDate, endDate) {
   // Generate series of dates for the x-axis
   const dateRange = getDateRange(startDate, endDate);
@@ -212,6 +234,7 @@ async function getAbsenteeismTrend(startDate, endDate) {
   return absenteeismTrend;
 }
 
+//used for late arrivals by depatment chart in attendance section
 async function getLateArrivalsByDepartment(startDate, endDate) {
   const lateArrivalsData = await Attendance.aggregate([
     {
@@ -246,8 +269,7 @@ async function getLateArrivalsByDepartment(startDate, endDate) {
       $group: {
         _id: '$department._id',
         departmentName: { $first: '$department.name' },
-        totalLate: { $sum: 1 },
-        averageLateMinutes: { $avg: '$lateBy' }
+        totalLate: { $sum: 1 }
       }
     }
   ]);
@@ -255,6 +277,7 @@ async function getLateArrivalsByDepartment(startDate, endDate) {
   return lateArrivalsData;
 }
 
+//used for Overtime by Department chat in attendance section
 async function getOvertimeDistribution(startDate, endDate) {
   const overtimeData = await Attendance.aggregate([
     {
@@ -305,7 +328,12 @@ async function getOvertimeDistribution(startDate, endDate) {
   return overtimeData;
 }
 
+
+
+
 // Helper functions for leave management
+
+//used for leave distibution chart in overview section
 async function getLeaveStatusDistribution() {
   const leaveStatusData = await LeaveRequest.aggregate([
     {
@@ -400,20 +428,29 @@ async function getLeaveSeasonalPatterns(currentDate) {
   }));
 }
 
+
+
+
 // Helper functions for workforce analytics
+
+//used for employees by department chart in overview section
 async function getEmployeesByDepartment() {
   const departmentData = await Department.aggregate([
     {
+      //left outer join between department and users
       $lookup: {
         from: 'users',
         localField: '_id',
         foreignField: 'departmentId',
+        //the name of the new array field that will store the matched documents
         as: 'employees'
       }
     },
     {
       $project: {
+        //Includes the department’s _id in the output
         _id: 1,
+        //Includes the department’s name field
         name: 1,
         employeeCount: { $size: '$employees' }
       }
@@ -481,6 +518,10 @@ async function getManagerEmployeeRatio() {
     ratio: managerCount > 0 ? employeeCount / managerCount : 0
   };
 }
+
+
+
+
 
 // Helper functions for resource management
 async function getResourceUtilization() {
@@ -602,6 +643,11 @@ async function getMostRequestedResources() {
   
   return resourceRequests;
 }
+
+
+
+
+
 
 // Helper functions for communication analytics
 async function getPeakCommunicationTimes(startDate, endDate) {
@@ -758,15 +804,3 @@ async function getAverageResponseTime(startDate, endDate) {
   };
 }
 
-// Utility function to generate a date range
-function getDateRange(startDate, endDate) {
-  const dates = [];
-  const currentDate = new Date(startDate);
-  
-  while (currentDate <= endDate) {
-    dates.push(new Date(currentDate));
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return dates;
-}
