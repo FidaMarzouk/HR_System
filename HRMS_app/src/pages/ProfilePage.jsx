@@ -178,11 +178,11 @@ const ProfilePage = () => {
         validationErrors.push("New passwords do not match.");
       }
     }
-  
+    //rendering all errors
     if (validationErrors.length > 0) {
       setError(validationErrors.join("\n"));
       setIsLoading(false);
-      setTimeout(() => setError(""), 5000);
+      setTimeout(() => setError(""), 9000);
       return;
     }
   
@@ -308,11 +308,11 @@ const ProfilePage = () => {
           </Typography>
 
           {error && (
-            <div className="p-4 mb-6 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3">
-              <AlertCircle className="text-red-400" />
-              <p className="text-red-400">{error}</p>
-            </div>
-          )}
+          <div className="p-4 mb-6 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3">
+            <AlertCircle className="text-red-400" />
+            <p className="text-red-400 whitespace-pre-line">{error}</p>
+          </div>
+        )}
 
           {success && (
             <div className="p-4 mb-6 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
