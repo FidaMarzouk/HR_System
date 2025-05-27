@@ -69,7 +69,8 @@ const updateUserValidationRules = [
   
   body('phone')
     .optional()
-    .matches(/^\d+$/).withMessage('Phone number should only contain numbers.'),
+    .matches(/^\d+$/).withMessage('Phone number should only contain numbers.')
+    .isLength({ min: 8, max: 8 }).withMessage('Phone number must be exactly 8 digits long.'),
   
   body('password')
     .optional()

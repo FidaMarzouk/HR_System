@@ -201,6 +201,7 @@ exports.getEvents = async (req, res) => {
         { visibility: 'public' },
         // Department events - only visible to users in the same department
         { visibility: 'department', departmentId: userDepartmentId },
+        { visibility: 'department', 'usersInvolved.userId': userId },
         // Private events - only visible to creator and invitees
         { visibility: 'private', createdBy: userId },
         // Events where user is invited

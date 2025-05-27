@@ -192,90 +192,77 @@ const EmployeePage = () => {
     e.preventDefault();
     setErrorMessage(""); // Clear previous errors
   
+    // Common validation function
+    const validateFields = (employee) => {
+      const requiredFields = [
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "position",
+        "role",
+        "salary",
+        "hireDate",
+        "personalEmail",
+      ];
+      const missingFields = requiredFields.filter((field) => !employee[field]);
+      return missingFields.length > 0
+        ? `Please fill in all required fields:\n• ${missingFields.join("\n• ")}`
+        : null;
+    };
+  
     try {
       // Create FormData object
       const formData = new FormData();
+      const employee = isEditing ? selectedEmployee : newEmployee;
   
-      // Set fields based on whether we're editing or creating
-      if (isEditing) {
-        // For editing, only include fields that have changed
-        Object.keys(selectedEmployee).forEach(key => {
-          if (key !== 'profilePicture' && key !== 'departmentId' && selectedEmployee[key]) {
-            formData.append(key, selectedEmployee[key]);
+      // Validate fields for both create and edit
+      const validationError = validateFields(employee);
+      if (validationError) {
+        return setErrorMessage(validationError);
+      }
+  
+      // Add fields to FormData
+      Object.keys(employee).forEach((key) => {
+        if (key !== "profilePicture" && employee[key]) {
+          if (key === "departmentId") {
+            const deptId =
+              typeof employee[key] === "object"
+                ? employee[key]._id
+                : employee[key];
+            formData.append(key, deptId);
+          } else {
+            formData.append(key, employee[key]);
           }
-        });
-  
-        // Handle department ID properly
-        if (selectedEmployee.departmentId) {
-          const deptId = typeof selectedEmployee.departmentId === 'object' 
-            ? selectedEmployee.departmentId._id 
-            : selectedEmployee.departmentId;
-          
-          formData.append('departmentId', deptId);
         }
+      });
   
-        // Add profile picture if selected
-        if (selectedFile) {
-          formData.append('profilePicture', selectedFile);
-        }
+      // Add profile picture if selected
+      if (selectedFile) {
+        formData.append("profilePicture", selectedFile);
+      }
   
-        // Make the API call
-        const response = await axios.put(
-          `http://localhost:8080/api/users/${selectedEmployee._id}`,
-          formData,
-          {
-            withCredentials: true, 
-            headers: { 
-              'Content-Type': 'multipart/form-data'
-            },
-          }
+      // Make the API call
+      const response = await axios({
+        method: isEditing ? "put" : "post",
+        url: isEditing
+          ? `http://localhost:8080/api/users/${selectedEmployee._id}`
+          : "http://localhost:8080/api/users",
+        data: formData,
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+  
+      // Handle success
+      if (response.data.user || !isEditing) {
+        await refreshAllEmployeeData();
+        setSuccessMessage(
+          isEditing
+            ? "Employee details updated successfully!"
+            : "New employee added successfully!"
         );
-  
-        if (response.data.user) {
-          await refreshAllEmployeeData();
-          setSuccessMessage("Employee details updated successfully!");
-          setIsEditing(false);
-          fetchEmployees();
-        }
-      } else {
-        // For creating, validate required fields client-side first (optional but recommended)
-        const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'position', 'role', 'salary', 'hireDate', 'personalEmail'];
-        const missingFields = requiredFields.filter(field => !newEmployee[field]);
-        
-        if (missingFields.length > 0) {
-          return setErrorMessage(`Please fill in all required fields:\n• ${missingFields.join('\n• ')}`);
-        }
-  
-        // Add all employee fields to formData
-        Object.keys(newEmployee).forEach(key => {
-          if (key !== 'profilePicture' && newEmployee[key]) {
-            // Handle department ID correctly
-            if (key === 'departmentId') {
-              formData.append(key, typeof newEmployee[key] === 'object' ? newEmployee[key]._id : newEmployee[key]);
-            } else {
-              formData.append(key, newEmployee[key]);
-            }
-          }
-        });
-  
-        // Add profile picture if selected
-        if (selectedFile) {
-          formData.append('profilePicture', selectedFile);
-        }
-  
-        // Make the API call
-        const response = await axios.post(
-          "http://localhost:8080/api/users",
-          formData,
-          {
-            headers: { 
-              'Content-Type': 'multipart/form-data'
-            },
-            withCredentials: true, 
-          }
-        );
-  
-        setSuccessMessage("New employee added successfully!");
         fetchEmployees();
       }
   
@@ -299,34 +286,26 @@ const EmployeePage = () => {
       setSelectedFile(null);
       setPreviewImage(null);
       setIsCreating(false);
+      setIsEditing(false);
       setSelectedEmployee(null);
   
       // Clear success message after delay
       setTimeout(() => {
         setSuccessMessage("");
       }, 3000);
-  
     } catch (error) {
       console.error("Error submitting employee form:", error);
-      
-      // Check if the error response contains validation errors
+  
+      // Handle errors
       if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-        // Format validation errors for display - show all errors at once
-        const validationErrors = error.response.data.errors.map(err => err.msg);
-        const uniqueErrors = [...new Set(validationErrors)]; // Remove duplicates
-        setErrorMessage(`Please correct the following issues:\n• ${uniqueErrors.join('\n• ')}`);
+        const validationErrors = error.response.data.errors.map((err) => err.msg);
+        const uniqueErrors = [...new Set(validationErrors)];
+        setErrorMessage(`Please correct the following issues:\n• ${uniqueErrors.join("\n• ")}`);
       } else if (error.response?.data?.message) {
-        // Display specific error message from server
         setErrorMessage(error.response.data.message);
       } else {
-        // Display generic error message
         setErrorMessage("An error occurred while saving. Please try again.");
       }
-      
-      // Clear error message after delay (increased time to read all errors)
-      setTimeout(() => {
-        setErrorMessage("");
-      }, 8000);
     }
   };
   
@@ -1129,7 +1108,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
       <div className="fixed inset-0 bg-black/70 flex justify-center items-center backdrop-blur-sm z-50 p-2 sm:p-4">
         <form 
         className="bg-[#2a2a2a] p-3 sm:p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg border border-[#444] scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark"
-          onSubmit={handleFormSubmit}
+          onSubmit={handleFormSubmit} noValidate
         >
           {errorMessage && (
             
@@ -1305,7 +1284,7 @@ const totalDepartmentPages = Math.ceil(filteredDepartments.length / departmentsP
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-300">Salary <span className="text-red-500">*</span></label>
               <input 
-                type="number" 
+                type="text" 
                 name="salary" 
                 value={isEditing ? selectedEmployee?.salary || "" : newEmployee?.salary || ""} 
                 onChange={handleFormChange} 

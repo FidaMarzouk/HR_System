@@ -1144,15 +1144,34 @@ const handleUpdateAttendeeStatus = async (status) => {
                   )}
                   
                   {selectedEvent.usersInvolved && selectedEvent.usersInvolved.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Participants</h4>
-                      <div className="bg-[#242424] p-3 rounded-lg">
-                        <div className="flex flex-wrap gap-2">
-                          {selectedEvent.usersInvolved.map((user, idx) => {
-                            const userData = usersList.find(u => u._id === user.userId._id || u._id === user.userId);
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-2">Participants</h4>
+                    <div className="bg-[#242424] p-3 rounded-lg">
+                      <div className="flex flex-wrap gap-2">
+                        {/* Render logged-in user if they are in usersInvolved */}
+                        {selectedEvent.usersInvolved.some(u => (u.userId._id || u.userId) === user.id) && (
+                          <div 
+                            key={user.id} 
+                            className={`text-xs px-3 py-1 rounded-full inline-flex items-center ${
+                              selectedEvent.usersInvolved.find(u => (u.userId._id || u.userId) === user.id).status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
+                              selectedEvent.usersInvolved.find(u => (u.userId._id || u.userId) === user.id).status === "approved" ? "bg-green-500/20 text-green-400" :
+                              "bg-red-500/20 text-red-400"
+                            }`}
+                          >
+                            {user.firstName} {user.lastName}
+                            {selectedEvent.usersInvolved.find(u => (u.userId._id || u.userId) === user.id).status === "pending" && <AlertTriangle className="h-3 w-3 ml-1" />}
+                            {selectedEvent.usersInvolved.find(u => (u.userId._id || u.userId) === user.id).status === "approved" && <CheckCircle className="h-3 w-3 ml-1" />}
+                            {selectedEvent.usersInvolved.find(u => (u.userId._id || u.userId) === user.id).status === "declined" && <XCircle className="h-3 w-3 ml-1" />}
+                          </div>
+                        )}
+                        {/* Render other users */}
+                        {selectedEvent.usersInvolved
+                          .filter(u => (u.userId._id || u.userId) !== user.id)
+                          .map((user, idx) => {
+                            const userData = usersList.find(u => u._id === (typeof user.userId === "string" ? user.userId : user.userId._id));
                             return userData ? (
                               <div 
-                                key={idx} 
+                                key={user.userId._id || user.userId} 
                                 className={`text-xs px-3 py-1 rounded-full inline-flex items-center ${
                                   user.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
                                   user.status === "approved" ? "bg-green-500/20 text-green-400" :
@@ -1166,10 +1185,10 @@ const handleUpdateAttendeeStatus = async (status) => {
                               </div>
                             ) : null;
                           })}
-                        </div>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
                   
                   <div className="mt-6 flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
                     {/* Event creator can edit or delete */}
@@ -1311,7 +1330,12 @@ const handleUpdateAttendeeStatus = async (status) => {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="text-sm font-medium text-gray-400 block mb-2">Description <span className="text-red-500">*</span></label>
+                    <label className="text-sm font-medium text-gray-400 block mb-2">
+                      Description{" "}
+                      {["meeting", "mission"].includes(eventForm.eventType) && (
+                        <span className="text-red-500">*</span>
+                      )}
+                    </label>
                       <textarea
                         value={eventForm.description}
                         onChange={(e) => setEventForm({...eventForm, description: e.target.value})}

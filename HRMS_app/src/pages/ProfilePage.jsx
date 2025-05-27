@@ -26,12 +26,12 @@ const ProfilePage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [skillInput, setSkillInput] = useState("");
   const [changePassword, setChangePassword] = useState(false);
+  const [submittedAge, setSubmittedAge] = useState(null); 
   const navigate = useNavigate();
 
   // Validation helper functions
   const isNameValid = (name) => /^[A-Za-z\s]+$/.test(name);
   const isPhoneValid = (phone) => /^\d+$/.test(phone);
-  const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -190,7 +190,7 @@ const ProfilePage = () => {
       const userId = user?.id;
   
       const data = new FormData();
-      const age = formData.birthdate ? calculateAge(formData.birthdate) : null;
+      const age = calculateAge(formData.birthdate); // Calculate age only on submit
   
       const fieldsToAdd = {
         firstName: formData.firstName,
@@ -226,6 +226,7 @@ const ProfilePage = () => {
   
       if (response.ok) {
         const updatedUser = await response.json();
+        setSubmittedAge(age);
         setUser(updatedUser);
         setSuccess("Profile updated successfully");
   
@@ -247,7 +248,7 @@ const ProfilePage = () => {
         } else {
           setError(errorData.message || "Failed to update profile");
         }
-        setTimeout(() => setError(""), 5000);
+        setTimeout(() => setError(""), 9000);
       }
     } catch (error) {
       console.error("Update error:", error);
@@ -369,9 +370,9 @@ const ProfilePage = () => {
                       {user.department}
                     </span>
                   )}
-                  {formData.birthdate && (
+                  {submittedAge !== null && (
                     <span className="px-3 py-1 bg-[#23A49B]/20 text-[#23A49B] rounded-full text-xs">
-                      Age: {calculateAge(formData.birthdate)}
+                      Age: {submittedAge}
                     </span>
                   )}
                 </div>

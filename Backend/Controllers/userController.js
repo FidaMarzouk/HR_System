@@ -269,15 +269,6 @@ exports.createUser = async (req, res) => {
   } catch (err) {
     console.error("Error creating user:", err);
     
-    // Handle MongoDB validation errors
-    if (err.name === 'ValidationError') {
-      const errorMessages = Object.values(err.errors).map(e => ({ msg: e.message }));
-      return res.status(400).json({ 
-        message: 'Validation failed',
-        errors: errorMessages
-      });
-    }
-    
     // Handle duplicate key errors
     if (err.code === 11000) {
       const field = Object.keys(err.keyPattern)[0];

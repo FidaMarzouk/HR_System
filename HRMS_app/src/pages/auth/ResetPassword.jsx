@@ -58,7 +58,7 @@ const ResetPassword = () => {
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/');
-        }, 6000);
+        }, 3000);
       } else {
         // Handle validation errors from backend
         if (data.errors && data.errors.length > 0) {

@@ -706,6 +706,16 @@ const CustomTooltip = ({ active, payload, label }) => {
                         contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
                         labelStyle={{ color: colors.text }}
                         itemStyle={{ color: colors.text }}
+                        labelFormatter={(label) => label}
+                        formatter={(value, name, props) => {
+                          return [
+                            <>
+                              {value} hours <br />
+                              {props.payload.averageHoursPerDay} average hours per day
+                            </>,
+                            "Production Hours"
+                          ];
+                        }}
                       />
                       <Line
                         type="monotone"

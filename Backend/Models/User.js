@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  phone: { type: String, required: true },
+  email: { type: String, unique: true },
+  phone: { type: String,required: true },
   position: { type: String, required: true },
   departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
   managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to manager
   hireDate: { type: Date, required: true },
-  salary: { type: Number, required: true },
+  salary: { type: Number,required: true },
   leaveRequestAllowed: { type: Number},
   remainingLeaveDays: { type: Number },
   skills: { type: [String], required: true },
@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
   profilePicture: { type: String, default: '' },
   birthdate: { type: Date },
   age: { type: Number },
-  personalEmail: { type: String } 
+  personalEmail: { type: String,required: true  } 
 }, { timestamps: true });
 
 // Middleware to check if the managerId points to a valid manager

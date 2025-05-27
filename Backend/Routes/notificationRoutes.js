@@ -14,6 +14,6 @@ router.put('/:id/read', authMiddleware , notificationController.markAsRead);
 router.put('/read-all', authMiddleware , notificationController.markAllAsRead);
 
 // Delete notification
-router.delete('/:id', notificationController.deleteNotification);
+router.delete('/:id', authMiddleware,notificationController.deleteNotification);
 
 module.exports = router;
