@@ -606,6 +606,9 @@ const ManagerDashboardHomePage = () => {
         </div>
         )}
 
+
+
+
         {/* Team Attendance Section */}
         {activeSection === "attendance" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -716,6 +719,10 @@ const ManagerDashboardHomePage = () => {
             </div>
           </div>
         )}
+
+
+
+
 
         {/* Leave Management Section */}
         {activeSection === "leave" && (
@@ -886,6 +893,9 @@ const ManagerDashboardHomePage = () => {
           </div>
         )}
 
+
+
+
         {/* Calendar Section */}
         {activeSection === "calendar" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -975,6 +985,9 @@ const ManagerDashboardHomePage = () => {
             </div>
         </div>
         )}
+
+
+
         {/* Team Productivity Section */}
         {activeSection === "productivity" && (
         <div className="space-y-6">
@@ -1053,87 +1066,89 @@ const ManagerDashboardHomePage = () => {
                 </div>
             </div>
 
- {/* Team Breakdown Section */}
-<div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-  <div className="flex justify-between items-center mb-4">
-    <Typography className="text-white text-lg font-bold">Team Productivity Breakdown</Typography>
-  </div>
-  
-  {dashboardData.isLoading ? (
-    <div className="flex justify-center py-8">
-      <Loader2 className="w-8 h-8 text-[#23A49B] animate-spin" />
-    </div>
-  ) : (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm text-left text-gray-300">
-        <thead className="text-xs uppercase text-gray-400 border-b border-gray-700">
-          <tr>
-            <th scope="col" className="py-3 px-4">Team Member</th>
-            <th scope="col" className="py-3 px-4">Position</th>
-            <th scope="col" className="py-3 px-4">Avg Hours</th>
-            <th scope="col" className="py-3 px-4">Overtime</th>
-            <th scope="col" className="py-3 px-4">Productivity Score</th>
-            <th scope="col" className="py-3 px-4">Trend</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dashboardData.teamProductivity.teamMemberProductivity && dashboardData.teamProductivity.teamMemberProductivity.length > 0 ? (
-            dashboardData.teamProductivity.teamMemberProductivity.map((member, idx) => (
-              <tr key={member.id} className="border-b border-gray-700 hover:bg-gray-700/30 transition-colors">
-                <td className="py-3 px-4 font-medium text-gray-200">{member.name}</td>
-                <td className="py-3 px-4 text-gray-400">{member.position}</td>
-                <td className="py-3 px-4">{member.avgHours}h</td>
-                <td className="py-3 px-4">
-                  {member.overtime > 0 ? (
-                    <span className="text-amber-400">{member.overtime}h</span>
-                  ) : (
-                    <span>{member.overtime}h</span>
-                  )}
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center">
-                    <div className="w-full bg-gray-700 rounded-full h-2 mr-2">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          member.productivityScore >= 90 ? 'bg-green-500' : 
-                          member.productivityScore >= 70 ? 'bg-[#23A49B]' : 
-                          member.productivityScore >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                        }`} 
-                        style={{ width: `${member.productivityScore}%` }}
-                      ></div>
-                    </div>
-                    <span>{member.productivityScore}%</span>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  {member.trend === 'up' ? (
-                    <div className="flex items-center">
-                      <TrendingUp className="text-green-500 w-4 h-4 mr-1" />
-                      <span className="text-xs text-green-500">Improving</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <TrendingDown className="text-red-500 w-4 h-4 mr-1" />
-                      <span className="text-xs text-red-500">Declining</span>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6" className="py-6 px-4 text-center text-gray-400">
-                No team productivity data available
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  )}
-</div>
+            {/* Team Breakdown Section */}
+            <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <Typography className="text-white text-lg font-bold">Team Productivity Breakdown</Typography>
+              </div>
+              
+              {dashboardData.isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 text-[#23A49B] animate-spin" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-400 border-b border-gray-700">
+                      <tr>
+                        <th scope="col" className="py-3 px-4">Team Member</th>
+                        <th scope="col" className="py-3 px-4">Position</th>
+                        <th scope="col" className="py-3 px-4">Avg Hours</th>
+                        <th scope="col" className="py-3 px-4">Overtime</th>
+                        <th scope="col" className="py-3 px-4">Productivity Score</th>
+                        <th scope="col" className="py-3 px-4">Trend</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dashboardData.teamProductivity.teamMemberProductivity && dashboardData.teamProductivity.teamMemberProductivity.length > 0 ? (
+                        dashboardData.teamProductivity.teamMemberProductivity.map((member, idx) => (
+                          <tr key={member.id} className="border-b border-gray-700 hover:bg-gray-700/30 transition-colors">
+                            <td className="py-3 px-4 font-medium text-gray-200">{member.name}</td>
+                            <td className="py-3 px-4 text-gray-400">{member.position}</td>
+                            <td className="py-3 px-4">{member.avgHours}h</td>
+                            <td className="py-3 px-4">
+                              {member.overtime > 0 ? (
+                                <span className="text-amber-400">{member.overtime}h</span>
+                              ) : (
+                                <span>{member.overtime}h</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <div className="w-full bg-gray-700 rounded-full h-2 mr-2">
+                                  <div 
+                                    className={`h-2 rounded-full ${
+                                      member.productivityScore >= 90 ? 'bg-green-500' : 
+                                      member.productivityScore >= 70 ? 'bg-[#23A49B]' : 
+                                      member.productivityScore >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                                    }`} 
+                                    style={{ width: `${member.productivityScore}%` }}
+                                  ></div>
+                                </div>
+                                <span>{member.productivityScore}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              {member.trend === 'up' ? (
+                                <div className="flex items-center">
+                                  <TrendingUp className="text-green-500 w-4 h-4 mr-1" />
+                                  <span className="text-xs text-green-500">Improving</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center">
+                                  <TrendingDown className="text-red-500 w-4 h-4 mr-1" />
+                                  <span className="text-xs text-red-500">Declining</span>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="py-6 px-4 text-center text-gray-400">
+                            No team productivity data available
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
         </div>
         )}
+
+
 
         {/* Team Communication Section */}
         {activeSection === "communication" && (

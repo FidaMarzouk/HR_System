@@ -347,7 +347,7 @@ const ManagerDashboard = () => {
     return "bg-gradient-to-r from-[#1a7870] to-[#0a5a54]"; // Evening - deep teal
   };
   const SideNavbar = ({ handleLogout, openSideBar, activePage, setActivePage }) => (
-    <div className="flex flex-col flex-grow overflow-y-auto mt-5 relative z-10">
+    <div className="flex flex-col flex-grow overflow-y-auto mt-5 relative z-10 scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
       <div className="flex-grow overflow-y-auto">
         <ul className="px-1">
           {navigationList.map((item) => (
@@ -664,71 +664,71 @@ const ManagerDashboard = () => {
 
           {/* Page content with robotics-themed background */}
           <div className="flex-1 p-3 md:p-6 relative">
-            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none">
+            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
               <CircuitPattern />
             </div>
             {/* Home page with sub-pages */}
             {activePage === "MainDashboard" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                 <ManagerDashboardHomePage />
               </div>
             )}
 
             {activePage === "PersonalDashboard" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                 <PersonalDashboard personalView={true} />
               </div>
             )}
 
             {/* Initial redirect to main dashboard when "Home" is active */}
             {activePage === "Home" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                 <ManagerDashboardHomePage />
               </div>
             )}
               
             {/* Employees page */}
             {activePage === "Employees" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                 <EmployeePage />
               </div>
             )}
               {/* Leave Requests page */}
               {activePage === "Leave Requests" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                   <LeaveRequestPage />
                 </div>
               )}
               
               {/* Attendance page */}
               {activePage === "Attendance" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                    <AttendanceManager />
                 </div>
               )}
   
               {/* Calendar page */}
               {activePage === "Calendar" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                   <CalendarManager/>
                 </div>
               )}
   
               {/* Profile page */}
               {activePage === "Profile" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                   <ProfilePage user={user} setUser={setUser} />
                 </div>
               )}
                       
               {activePage === "Notifications" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                   <NotificationPage/>
                 </div>
               )}
               
               {activePage === "Chat" && (
-              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-x-auto">
+              <div className="p-3 md:p-6 mt-3 md:mt-5 bg-[#1E1E1E] rounded-lg shadow-xl border border-gray-800 relative z-10 overflow-auto scrollbar-thin scrollbar-track-gray-700 scrollbar-thumb-teal hover:scrollbar-thumb-teal-dark">
                   <ChatComponent />
                 </div>
               )}

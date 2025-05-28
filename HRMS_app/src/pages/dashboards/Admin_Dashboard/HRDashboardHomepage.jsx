@@ -849,7 +849,7 @@ const HRDashboardHomepage = () => {
             </div>
             
             {/* Data Visualizations Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
               {/* Department Communication Chart */}
               <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6 lg:col-span-2">
                 <div className="flex items-center justify-between mb-4">
@@ -890,7 +890,7 @@ const HRDashboardHomepage = () => {
                   </div>
                 </div>
                 
-                <div className="flex-grow h-64">
+                <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dashboardData.communicationAnalytics.peakCommunicationTimes}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />

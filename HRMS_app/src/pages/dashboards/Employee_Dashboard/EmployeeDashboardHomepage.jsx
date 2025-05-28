@@ -692,50 +692,6 @@ const CustomTooltip = ({ active, payload, label }) => {
               </div>
             </div>
 
-                        {/* Production Hours Trend */}
-                        <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
-              <Typography variant="h5" className="text-white mb-4">Production Hours Trend</Typography>
-              <div className="h-80">
-                {dashboardData.attendanceMetrics?.productionHoursTrend?.weeklyTrend?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dashboardData.attendanceMetrics.productionHoursTrend.weeklyTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="week" tick={{ fill: colors.textSecondary }} />
-                      <YAxis tick={{ fill: colors.textSecondary }} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: colors.background, borderColor: colors.border }}
-                        labelStyle={{ color: colors.text }}
-                        itemStyle={{ color: colors.text }}
-                        labelFormatter={(label) => label}
-                        formatter={(value, name, props) => {
-                          return [
-                            <>
-                              {value} hours <br />
-                              {props.payload.averageHoursPerDay} average hours per day
-                            </>,
-                            "Production Hours"
-                          ];
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="totalHours"
-                        name="Production Hours"
-                        stroke={colors.chartColors[0]}
-                        strokeWidth={2}
-                        dot={{ fill: colors.chartColors[0] }}
-                        activeDot={{ r: 6, stroke: colors.chartColors[0], strokeWidth: 2, fill: colors.background }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <Typography className="text-gray-400">No production hours data available</Typography>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Overtime Trend */}
             <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-[#23A49B]/30 p-6">
               <Typography variant="h5" className="text-white mb-4">Overtime Hours</Typography>

@@ -127,7 +127,177 @@ exports.getManagerDashboardData = async (req, res) => {
   }
 };
 
+
+
+
+// used in Team Skills Distribution in overview section
+async function getEmployeeSkillsDistribution(teamIds) {
+      // Get all employees with their skills
+      const employees = await User.find(
+        { _id: { $in: teamIds } },
+        { skills: 1, firstName: 1, lastName: 1 }
+      );
+      
+      // Count occurrences of each skill
+      const skillsCount = {};
+      const employeesBySkill = {};
+      
+      employees.forEach(employee => {
+        employee.skills.forEach(skill => {
+          // Initialize if not exists
+          if (!skillsCount[skill]) {
+            skillsCount[skill] = 0;
+            employeesBySkill[skill] = [];
+          }
+          
+          skillsCount[skill]++;
+          employeesBySkill[skill].push({
+            id: employee._id,
+            name: `${employee.firstName} ${employee.lastName}`
+          });
+        });
+      });
+      
+      // Transform to array format for easier consumption by frontend
+      const skillsDistribution = Object.entries(skillsCount)
+        .map(([skill, count]) => ({
+          skill,
+          count,
+          percentage: employees.length > 0 ? (count / employees.length) * 100 : 0,
+          employees: employeesBySkill[skill]
+        }))
+        .sort((a, b) => b.count - a.count);
+      
+      // Find skills gaps (skills that only one person has)
+      const skillsGaps = skillsDistribution
+        .filter(item => item.count === 1)
+        .map(item => ({
+          skill: item.skill,
+          employee: item.employees[0]
+        }));
+      
+      // Find most common skills (top 5)
+      const topSkills = skillsDistribution.slice(0, 5);
+      
+      // Calculate skill coverage (how many employees have multiple skills)
+      const skillCoverageByEmployee = employees.map(employee => ({
+        id: employee._id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        skillsCount: employee.skills.length
+      })).sort((a, b) => b.skillsCount - a.skillsCount);
+      
+      return {
+        distribution: skillsDistribution,
+        skillsGaps,
+        topSkills,
+        skillCoverageByEmployee,
+        averageSkillsPerEmployee: employees.length > 0 
+          ? employees.reduce((acc, emp) => acc + emp.skills.length, 0) / employees.length 
+          : 0
+      };
+}
+
+// used in Team Tenure in overview section
+async function getDepartmentHiringTimeline(teamIds) {
+      // Get all team members with their hire dates
+      const employees = await User.find(
+        { _id: { $in: teamIds } },
+        { firstName: 1, lastName: 1, position: 1, hireDate: 1 }
+      ).sort({ hireDate: 1 });
+      
+      // Group employees by year and month of hire
+      const hiresByYearMonth = {};
+      const hiringTimeline = [];
+      
+      employees.forEach(employee => {
+        const hireDate = new Date(employee.hireDate);
+        const yearMonth = `${hireDate.getFullYear()}-${String(hireDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!hiresByYearMonth[yearMonth]) {
+          hiresByYearMonth[yearMonth] = [];
+        }
+        
+        hiresByYearMonth[yearMonth].push({
+          id: employee._id,
+          name: `${employee.firstName} ${employee.lastName}`,
+          position: employee.position,
+          hireDate: employee.hireDate
+        });
+      });
+      
+      // Convert to array format
+      Object.entries(hiresByYearMonth).forEach(([yearMonth, hires]) => {
+        const [year, month] = yearMonth.split('-');
+        hiringTimeline.push({
+          yearMonth,
+          year: parseInt(year),
+          month: parseInt(month),
+          displayMonth: new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('en-US', { month: 'long' }),
+          hiresCount: hires.length,
+          employees: hires
+        });
+      });
+      
+      // Sort chronologically
+      hiringTimeline.sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+      
+      // Calculate tenure statistics
+      const now = new Date();
+      const tenureInMonths = employees.map(emp => {
+        const hireDate = new Date(emp.hireDate);
+        const diffTime = Math.abs(now - hireDate);
+        const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44));
+        return diffMonths;
+      });
+      
+      // Calculate average tenure
+      const avgTenure = tenureInMonths.length > 0 
+        ? tenureInMonths.reduce((sum, tenure) => sum + tenure, 0) / tenureInMonths.length 
+        : 0;
+      
+      // Calculate tenure distribution
+      const tenureDistribution = {
+        lessThan6Months: tenureInMonths.filter(months => months < 6).length,
+        sixToTwelveMonths: tenureInMonths.filter(months => months >= 6 && months < 12).length,
+        oneToTwoYears: tenureInMonths.filter(months => months >= 12 && months < 24).length,
+        twoToFiveYears: tenureInMonths.filter(months => months >= 24 && months < 60).length,
+        moreThanFiveYears: tenureInMonths.filter(months => months >= 60).length
+      };
+      
+      return {
+        hiringTimeline,
+        averageTenureMonths: avgTenure.toFixed(1),
+        tenureDistribution,
+        longestTenureEmployee: employees.length > 0 
+          ? {
+              id: employees[0]._id,
+              name: `${employees[0].firstName} ${employees[0].lastName}`,
+              position: employees[0].position,
+              hireDate: employees[0].hireDate
+            }
+          : null,
+        recentHires: employees.length > 0 
+          ? employees.slice(-3).reverse().map(emp => ({
+              id: emp._id,
+              name: `${emp.firstName} ${emp.lastName}`,
+              position: emp.position,
+              hireDate: emp.hireDate
+            }))
+          : []
+      };
+}
+
+
+
+
+
+
 // Helper Functions for Team Attendance Metrics
+
+//used for team attendance rate in overview section and in attendance section
 async function getTeamAttendanceRate(teamIds, startDate, endDate) {
   const workDays = getWorkingDaysBetweenDates(startDate, endDate);
   const expectedAttendance = teamIds.length * workDays;
@@ -145,53 +315,7 @@ async function getTeamAttendanceRate(teamIds, startDate, endDate) {
   };
 }
 
-async function getLateArrivalsTrend(teamIds, startDate, endDate) {
-  // Clone the dates to avoid modifying the originals
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  
-  // Ensure proper time bounds
-  start.setHours(0, 0, 0, 0);
-  end.setHours(23, 59, 59, 999);
-  
-  // Group late arrivals by date
-  const lateArrivals = await Attendance.aggregate([
-    {
-      $match: {
-        userId: { $in: teamIds.map(id => new mongoose.Types.ObjectId(id)) },
-        date: { $gte: start, $lte: end },
-        status: 'Late'
-      }
-    },
-    {
-      $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-        count: { $sum: 1 }
-      }
-    },
-    {
-      $sort: { _id: 1 }
-    }
-  ]);
-  
-  // Fill in missing dates with zero counts
-  const trend = [];
-  const currentDate = new Date(start);
-  while (currentDate <= end) {
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const existingData = lateArrivals.find(item => item._id === dateStr);
-    
-    trend.push({
-      date: dateStr,
-      count: existingData ? existingData.count : 0
-    });
-    
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return trend;
-}
-
+//used for absenteeism rate card in attendance section
 async function getAbsenteeismRate(teamIds, startDate, endDate) {
   const workDays = getWorkingDaysBetweenDates(startDate, endDate);
   const expectedAttendance = teamIds.length * workDays;
@@ -249,6 +373,7 @@ async function getAbsenteeismRate(teamIds, startDate, endDate) {
   };
 }
 
+//used for average check in time in attendance section
 async function getAverageCheckTimes(teamIds, startDate, endDate) {
   // Get average check-in and check-out times for the team
   const checkTimeAggregation = await Attendance.aggregate([
@@ -303,7 +428,78 @@ async function getAverageCheckTimes(teamIds, startDate, endDate) {
   };
 }
 
+// Helper function to count workdays in a date range (excluding weekends) used for workdays card in attendance section
+function getWorkingDaysBetweenDates(startDate, endDate) {
+    let count = 0;
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      // 0 = Sunday, 6 = Saturday
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        count++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return count;
+}
+
+//used in late arrivals trend in attendance section
+async function getLateArrivalsTrend(teamIds, startDate, endDate) {
+  // Clone the dates to avoid modifying the originals
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  // Ensure proper time bounds
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+  
+  // Group late arrivals by date
+  const lateArrivals = await Attendance.aggregate([
+    {
+      $match: {
+        userId: { $in: teamIds.map(id => new mongoose.Types.ObjectId(id)) },
+        date: { $gte: start, $lte: end },
+        status: 'Late'
+      }
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { _id: 1 }
+    }
+  ]);
+  
+  // Fill in missing dates with zero counts
+  const trend = [];
+  const currentDate = new Date(start);
+  while (currentDate <= end) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const existingData = lateArrivals.find(item => item._id === dateStr);
+    
+    trend.push({
+      date: dateStr,
+      count: existingData ? existingData.count : 0
+    });
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return trend;
+}
+
+
+
+
+
 // Helper Functions for Leave Management Metrics
+
+//used for pending leave requests card in overview section and in leave section
 async function getPendingLeaveRequests(managerId) {
   const pendingRequests = await LeaveRequest.find({
     managerId: managerId,
@@ -323,6 +519,7 @@ async function getPendingLeaveRequests(managerId) {
   };
 }
 
+//used for approval rate card in leave management section
 async function getLeaveApprovalRate(managerId, startDate, endDate) {
   const totalRequests = await LeaveRequest.countDocuments({
     managerId: managerId,
@@ -360,6 +557,7 @@ async function getLeaveApprovalRate(managerId, startDate, endDate) {
   };
 }
 
+//used for leave calendar in leave management section
 async function getLeaveCalendar(departmentId, startDate, endDate) {
   // Find all employees in the department (for filtering the list view)
   const departmentEmployees = await User.find({ departmentId: departmentId });
@@ -428,7 +626,131 @@ async function getLeaveCalendar(departmentId, startDate, endDate) {
   };
 }
 
+
+
+
+
+{/* helper functions for calendar events metrics*/}
+
+//used for Upcoming Events chart in events section
+  async function getUpcomingEvents(departmentId, teamIds, startDate, endDate) {
+
+    // Find all upcoming events where:
+    // 1. Event is public OR
+    // 2. Event is for this department OR
+    // 3. A team member is involved
+    const upcomingEvents = await CalendarEvent.find({
+      $and: [
+        { startDateTime: { $gte: startDate, $lte: endDate } },
+        { 
+          $or: [
+            { visibility: 'public' },
+            { departmentId: departmentId },
+            { 'usersInvolved.userId': { $in: teamIds } }
+          ]
+        },
+        { eventType: { $in: ['meeting', 'event', 'resourceReservation'] } }
+      ]
+    })
+    .populate('createdBy', 'firstName lastName')
+    .populate('resource', 'name type')
+    .populate('usersInvolved.userId', 'firstName lastName')
+    .sort({ startDateTime: 1 })
+    .limit(10);
+    
+    return upcomingEvents.map(event => ({
+      id: event._id,
+      title: event.title,
+      type: event.eventType,
+      startDateTime: event.startDateTime,
+      endDateTime: event.endDateTime,
+      createdBy: `${event.createdBy.firstName} ${event.createdBy.lastName}`,
+      location: event.location,
+      status: event.status,
+      resource: event.resource ? event.resource.name : null,
+      participants: event.usersInvolved.map(user => ({
+        name: user.userId ? `${user.userId.firstName} ${user.userId.lastName}` : 'Unknown',
+        status: user.status
+      }))
+    }));
+  }
+  
+  //used for Event Participation chart
+  async function getEventParticipationRates(departmentId, teamIds, startDate, endDate) {
+    // Find all completed events in the date range where either:
+    // 1. The event belongs to the department
+    // 2. Department members are involved as participants
+    // 3. The event was created by any department member
+    const completedEvents = await CalendarEvent.find({
+      endDateTime: { $gte: startDate, $lte: endDate },
+      $or: [
+        { departmentId: departmentId },
+        { 'usersInvolved.userId': { $in: teamIds } },
+        { createdBy: { $in: teamIds } }  
+      ]
+    });
+  
+    if (completedEvents.length === 0) {
+      return {
+        overallParticipationRate: "0",
+        eventTypes: {},
+      };
+    }
+  
+    // Calculate participation metrics
+    let acceptedCount = 0;
+    let totalInvites = 0;
+    const eventTypeStats = {};
+  
+    completedEvents.forEach(event => {
+
+      // Track by event type
+      if (!eventTypeStats[event.eventType]) {
+        eventTypeStats[event.eventType] = {
+          accepted: 0,
+          total: 0
+        };
+      }
+      
+      event.usersInvolved.forEach(user => {
+        if (teamIds.some(id => id.toString() === user.userId?.toString())) {
+          totalInvites++;
+          eventTypeStats[event.eventType].total++;
+          
+          if (user.status === 'accepted') {
+            acceptedCount++;
+            eventTypeStats[event.eventType].accepted++;
+          }
+        }
+      });
+    });
+    
+    // Calculate rates
+    const overallRate = totalInvites > 0 ? (acceptedCount / totalInvites) * 100 : 0;
+    
+    // Format event type stats with percentages
+    const eventTypesWithRates = {};
+    Object.entries(eventTypeStats).forEach(([type, stats]) => {
+      eventTypesWithRates[type] = {
+        ...stats,
+        participationRate: stats.total > 0 ? Math.round((stats.accepted / stats.total) * 100) : 0
+      };
+    });
+    return {
+      overallParticipationRate: overallRate.toFixed(2),
+      eventTypes: eventTypesWithRates,
+    };
+  }
+
+
+
+
+
+
+
 // Helper Functions for Team Productivity Metrics
+
+//used for average production hours in overview section and in team productivity section
 async function getAverageProductionHours(teamIds, startDate, endDate) {
   const productionHours = await Attendance.aggregate([
     {
@@ -497,41 +819,6 @@ async function getTeamMemberProductivityMetrics(teamIds, startDate, endDate) {
     
     const teamMemberMetrics = [];
     
-    // Helper function to count working days between two dates
-    function getWorkingDaysBetweenDates(startDate, endDate) {
-      let count = 0;
-      const currentDate = new Date(startDate);
-      const lastDate = new Date(endDate);
-      
-      while (currentDate <= lastDate) {
-        const dayOfWeek = currentDate.getDay();
-        // Skip weekends (0 = Sunday, 6 = Saturday)
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          count++;
-        }
-        // Move to next day
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      return count;
-    }
-    
-    // Helper function to count workdays in a date range
-    function countWorkdaysInRange(startDate, endDate) {
-      let count = 0;
-      const currentDate = new Date(startDate);
-      const lastDate = new Date(endDate);
-      
-      while (currentDate <= lastDate) {
-        const dayOfWeek = currentDate.getDay();
-        // Skip weekends (0 = Sunday, 6 = Saturday)
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          count++;
-        }
-        // Move to next day
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      return count;
-    }
     
     // Helper function to get used leave days in a period
     async function getUsedLeaveDays(userId, startDate, endDate) {
@@ -548,7 +835,7 @@ async function getTeamMemberProductivityMetrics(teamIds, startDate, endDate) {
         const leaveStart = new Date(Math.max(leave.startDate, startDate));
         const leaveEnd = new Date(Math.min(leave.endDate, endDate));
         // Calculate business days between the dates
-        totalLeaveDays += countWorkdaysInRange(leaveStart, leaveEnd);
+        totalLeaveDays += getWorkingDaysBetweenDates(leaveStart, leaveEnd);
       });
       
       return totalLeaveDays;
@@ -669,8 +956,13 @@ async function getTeamMemberProductivityMetrics(teamIds, startDate, endDate) {
     return teamMemberMetrics.sort((a, b) => b.productivityScore - a.productivityScore);
 }
 
+
+
+
+
 {/* Helper Functions for Team Communication*/}
 
+//used for unread messages card in overview section and communication section
 async function getUnreadMessagesCount(managerId) {
   // Count unread direct messages to the manager
   const unreadMessages = await Chat.countDocuments({
@@ -729,6 +1021,7 @@ async function getUnreadMessagesCount(managerId) {
   };
 }
 
+//used for average response time in card
 async function getResponseTimeToMessages(managerId, startDate, endDate) {
     // This is a complex metric that requires tracking conversation pairs
     // For simplicity, we'll use a basic approach - avg time between received and sent messages
@@ -807,11 +1100,9 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
       responsesAnalyzed: responsesCount,
     };
   }
-  
-  
-  
-  // Calculate team engagement metrics in chats
-  async function getTeamEngagementInChats(teamIds, startDate, endDate) {
+
+// used for Most Active Team Members chart
+async function getTeamEngagementInChats(teamIds, startDate, endDate) {
     // First, get user information for all team members
     const teamMembers = await User.find({
       _id: { $in: teamIds }
@@ -883,273 +1174,9 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
     };
   }
     
-  {/* Get upcoming department and team events*/}
-  async function getUpcomingEvents(departmentId, teamIds, startDate, endDate) {
 
-    // Find all upcoming events where:
-    // 1. Event is public OR
-    // 2. Event is for this department OR
-    // 3. A team member is involved
-    const upcomingEvents = await CalendarEvent.find({
-      $and: [
-        { startDateTime: { $gte: startDate, $lte: endDate } },
-        { 
-          $or: [
-            { visibility: 'public' },
-            { departmentId: departmentId },
-            { 'usersInvolved.userId': { $in: teamIds } }
-          ]
-        },
-        { eventType: { $in: ['meeting', 'event', 'resourceReservation'] } }
-      ]
-    })
-    .populate('createdBy', 'firstName lastName')
-    .populate('resource', 'name type')
-    .populate('usersInvolved.userId', 'firstName lastName')
-    .sort({ startDateTime: 1 })
-    .limit(10);
-    
-    return upcomingEvents.map(event => ({
-      id: event._id,
-      title: event.title,
-      type: event.eventType,
-      startDateTime: event.startDateTime,
-      endDateTime: event.endDateTime,
-      createdBy: `${event.createdBy.firstName} ${event.createdBy.lastName}`,
-      location: event.location,
-      status: event.status,
-      resource: event.resource ? event.resource.name : null,
-      participants: event.usersInvolved.map(user => ({
-        name: user.userId ? `${user.userId.firstName} ${user.userId.lastName}` : 'Unknown',
-        status: user.status
-      }))
-    }));
-  }
-  
-  async function getEventParticipationRates(departmentId, teamIds, startDate, endDate) {
-    // Find all completed events in the date range where either:
-    // 1. The event belongs to the department
-    // 2. Department members are involved as participants
-    // 3. The event was created by any department member
-    const completedEvents = await CalendarEvent.find({
-      endDateTime: { $gte: startDate, $lte: endDate },
-      $or: [
-        { departmentId: departmentId },
-        { 'usersInvolved.userId': { $in: teamIds } },
-        { createdBy: { $in: teamIds } }  
-      ]
-    });
-  
-    if (completedEvents.length === 0) {
-      return {
-        overallParticipationRate: "0",
-        eventTypes: {},
-      };
-    }
-  
-    // Calculate participation metrics
-    let acceptedCount = 0;
-    let totalInvites = 0;
-    const eventTypeStats = {};
-  
-    completedEvents.forEach(event => {
 
-      // Track by event type
-      if (!eventTypeStats[event.eventType]) {
-        eventTypeStats[event.eventType] = {
-          accepted: 0,
-          total: 0
-        };
-      }
-      
-      event.usersInvolved.forEach(user => {
-        if (teamIds.some(id => id.toString() === user.userId?.toString())) {
-          totalInvites++;
-          eventTypeStats[event.eventType].total++;
-          
-          if (user.status === 'accepted') {
-            acceptedCount++;
-            eventTypeStats[event.eventType].accepted++;
-          }
-        }
-      });
-    });
     
-    // Calculate rates
-    const overallRate = totalInvites > 0 ? (acceptedCount / totalInvites) * 100 : 0;
-    
-    // Format event type stats with percentages
-    const eventTypesWithRates = {};
-    Object.entries(eventTypeStats).forEach(([type, stats]) => {
-      eventTypesWithRates[type] = {
-        ...stats,
-        participationRate: stats.total > 0 ? Math.round((stats.accepted / stats.total) * 100) : 0
-      };
-    });
-    return {
-      overallParticipationRate: overallRate.toFixed(2),
-      eventTypes: eventTypesWithRates,
-    };
-  }
-    // Get employee skills distribution for the team
-    async function getEmployeeSkillsDistribution(teamIds) {
-      // Get all employees with their skills
-      const employees = await User.find(
-        { _id: { $in: teamIds } },
-        { skills: 1, firstName: 1, lastName: 1 }
-      );
-      
-      // Count occurrences of each skill
-      const skillsCount = {};
-      const employeesBySkill = {};
-      
-      employees.forEach(employee => {
-        employee.skills.forEach(skill => {
-          // Initialize if not exists
-          if (!skillsCount[skill]) {
-            skillsCount[skill] = 0;
-            employeesBySkill[skill] = [];
-          }
-          
-          skillsCount[skill]++;
-          employeesBySkill[skill].push({
-            id: employee._id,
-            name: `${employee.firstName} ${employee.lastName}`
-          });
-        });
-      });
-      
-      // Transform to array format for easier consumption by frontend
-      const skillsDistribution = Object.entries(skillsCount)
-        .map(([skill, count]) => ({
-          skill,
-          count,
-          percentage: employees.length > 0 ? (count / employees.length) * 100 : 0,
-          employees: employeesBySkill[skill]
-        }))
-        .sort((a, b) => b.count - a.count);
-      
-      // Find skills gaps (skills that only one person has)
-      const skillsGaps = skillsDistribution
-        .filter(item => item.count === 1)
-        .map(item => ({
-          skill: item.skill,
-          employee: item.employees[0]
-        }));
-      
-      // Find most common skills (top 5)
-      const topSkills = skillsDistribution.slice(0, 5);
-      
-      // Calculate skill coverage (how many employees have multiple skills)
-      const skillCoverageByEmployee = employees.map(employee => ({
-        id: employee._id,
-        name: `${employee.firstName} ${employee.lastName}`,
-        skillsCount: employee.skills.length
-      })).sort((a, b) => b.skillsCount - a.skillsCount);
-      
-      return {
-        distribution: skillsDistribution,
-        skillsGaps,
-        topSkills,
-        skillCoverageByEmployee,
-        averageSkillsPerEmployee: employees.length > 0 
-          ? employees.reduce((acc, emp) => acc + emp.skills.length, 0) / employees.length 
-          : 0
-      };
-    }
-    
-    // Get department hiring timeline
-    async function getDepartmentHiringTimeline(teamIds) {
-      // Get all team members with their hire dates
-      const employees = await User.find(
-        { _id: { $in: teamIds } },
-        { firstName: 1, lastName: 1, position: 1, hireDate: 1 }
-      ).sort({ hireDate: 1 });
-      
-      // Group employees by year and month of hire
-      const hiresByYearMonth = {};
-      const hiringTimeline = [];
-      
-      employees.forEach(employee => {
-        const hireDate = new Date(employee.hireDate);
-        const yearMonth = `${hireDate.getFullYear()}-${String(hireDate.getMonth() + 1).padStart(2, '0')}`;
-        
-        if (!hiresByYearMonth[yearMonth]) {
-          hiresByYearMonth[yearMonth] = [];
-        }
-        
-        hiresByYearMonth[yearMonth].push({
-          id: employee._id,
-          name: `${employee.firstName} ${employee.lastName}`,
-          position: employee.position,
-          hireDate: employee.hireDate
-        });
-      });
-      
-      // Convert to array format
-      Object.entries(hiresByYearMonth).forEach(([yearMonth, hires]) => {
-        const [year, month] = yearMonth.split('-');
-        hiringTimeline.push({
-          yearMonth,
-          year: parseInt(year),
-          month: parseInt(month),
-          displayMonth: new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('en-US', { month: 'long' }),
-          hiresCount: hires.length,
-          employees: hires
-        });
-      });
-      
-      // Sort chronologically
-      hiringTimeline.sort((a, b) => {
-        if (a.year !== b.year) return a.year - b.year;
-        return a.month - b.month;
-      });
-      
-      // Calculate tenure statistics
-      const now = new Date();
-      const tenureInMonths = employees.map(emp => {
-        const hireDate = new Date(emp.hireDate);
-        const diffTime = Math.abs(now - hireDate);
-        const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44));
-        return diffMonths;
-      });
-      
-      // Calculate average tenure
-      const avgTenure = tenureInMonths.length > 0 
-        ? tenureInMonths.reduce((sum, tenure) => sum + tenure, 0) / tenureInMonths.length 
-        : 0;
-      
-      // Calculate tenure distribution
-      const tenureDistribution = {
-        lessThan6Months: tenureInMonths.filter(months => months < 6).length,
-        sixToTwelveMonths: tenureInMonths.filter(months => months >= 6 && months < 12).length,
-        oneToTwoYears: tenureInMonths.filter(months => months >= 12 && months < 24).length,
-        twoToFiveYears: tenureInMonths.filter(months => months >= 24 && months < 60).length,
-        moreThanFiveYears: tenureInMonths.filter(months => months >= 60).length
-      };
-      
-      return {
-        hiringTimeline,
-        averageTenureMonths: avgTenure.toFixed(1),
-        tenureDistribution,
-        longestTenureEmployee: employees.length > 0 
-          ? {
-              id: employees[0]._id,
-              name: `${employees[0].firstName} ${employees[0].lastName}`,
-              position: employees[0].position,
-              hireDate: employees[0].hireDate
-            }
-          : null,
-        recentHires: employees.length > 0 
-          ? employees.slice(-3).reverse().map(emp => ({
-              id: emp._id,
-              name: `${emp.firstName} ${emp.lastName}`,
-              position: emp.position,
-              hireDate: emp.hireDate
-            }))
-          : []
-      };
-    }
 
   // Helper function to get week number
   function getWeekNumber(date) {
@@ -1157,7 +1184,6 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
     const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
   }
-  
   // Helper function to get start of week
   function getStartOfWeek(date) {
     const d = new Date(date);
@@ -1166,19 +1192,3 @@ async function getResponseTimeToMessages(managerId, startDate, endDate) {
     return new Date(d.setDate(diff));
   }
   
-  // Helper function to count workdays in a date range (excluding weekends)
-function getWorkingDaysBetweenDates(startDate, endDate) {
-    let count = 0;
-    const currentDate = new Date(startDate);
-    
-    while (currentDate <= endDate) {
-      // 0 = Sunday, 6 = Saturday
-      const dayOfWeek = currentDate.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        count++;
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    return count;
-  }
